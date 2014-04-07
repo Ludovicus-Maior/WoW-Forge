@@ -1,0 +1,26 @@
+#!/bin/sh -xv
+
+if [ -s /tmp/worker.pid -a kill -0 `cat /tmp/worker.pid` ] ; then
+    echo "# Worker still running on pid" `cat /tmp/worker.pid`
+    exit 0
+fi
+
+echo $$ > /tmp/worker.pid
+
+cd ~/worker
+
+echo "# Worker starting. PID $$, " `date`
+
+while [ -s /tmp/worker.pid ] ; do
+    ./ProcessQueue.py
+    LOCAL=$(git rev-parse master)
+    REMOTE=$(git rev-parse origin/master)
+    if [ $LOCAL != $REMOTE ] ; then
+        git pull
+        # Now restart
+        echo "# Worker restarting after update, PID $$, " `date`
+	rm /tmp/worker.pid
+	exec $0
+    fi
+done
+echo "# Worker stopping PID $$, " `date`
