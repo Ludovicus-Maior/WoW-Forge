@@ -1,26 +1,45 @@
-#!/bin/sh -xv
+#!/bin/sh 
 
-if [ -s /tmp/worker.pid -a kill -0 `cat /tmp/worker.pid` ] ; then
-    echo "# Worker still running on pid" `cat /tmp/worker.pid`
-    exit 0
+# Note that the short arguments are used for OSx and Ubuntu comptability
+
+if tty -s ; then
+  ONTTY=-s
+  set -x
+else
+  ONTTY=
+fi
+
+if [ -s /tmp/worker.pid ] ; then
+    if kill -0 `cat /tmp/worker.pid` ; then
+        logger $ONTTY -i -t WORKER -p user.notice Process `cat /tmp/worker.pid` still running. Exiting.
+        exit 0
+    else
+        logger $ONTTY -i -t WORKER -p user.notice Process `cat /tmp/worker.pid` died.  Starting anew.
+    fi
 fi
 
 echo $$ > /tmp/worker.pid
 
 cd ~/worker
 
-echo "# Worker starting. PID $$, " `date`
+logger $ONTTY -i -t WORKER -p user.info Worker starting. 
 
 while [ -s /tmp/worker.pid ] ; do
     ./ProcessQueue.py
+    status=$?
+    if [ $status -ne 0 ] ; then
+	logger $ONTTY -i -t WORKER -p user.warning ProcessQueue returned an error ${status}.  Taking a nap.
+        sleep 60
+    fi
     LOCAL=$(git rev-parse master)
     REMOTE=$(git rev-parse origin/master)
     if [ $LOCAL != $REMOTE ] ; then
         git pull
         # Now restart
-        echo "# Worker restarting after update, PID $$, " `date`
+        logger $ONTTY -i -t WORKER -p user.notice Restarting after update from $LOCAL to $REMOTE
 	rm /tmp/worker.pid
 	exec $0
     fi
 done
-echo "# Worker stopping PID $$, " `date`
+logger $ONTTY -i -t WORKER -p user.notice Stopping 
+exit 0
