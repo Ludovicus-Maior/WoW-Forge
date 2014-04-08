@@ -10,7 +10,10 @@ import traceback
 def Connect(region="us-west-2", queue="WorkerQ"):
     try:
         conn = boto.sqs.connect_to_region(region)
-        q = conn.get_queue(queue)
+	try:
+            q = conn.get_queue(queue)
+	except:
+	    q = conn.create_queue(queue,...)
         return q
     except:
         print "Unable to connect to SQS region %s" % region
