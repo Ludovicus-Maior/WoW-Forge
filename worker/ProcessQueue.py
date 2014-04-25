@@ -4,6 +4,7 @@ import boto.sqs
 import json
 import os
 import subprocess
+import time
 import traceback
 
 
@@ -12,9 +13,10 @@ def Connect(region="us-west-2", queue="WorkerQ"):
         conn = boto.sqs.connect_to_region(region)
 	try:
             q = conn.get_queue(queue)
+	    return q
 	except:
-	    q = conn.create_queue(queue,...)
-        return q
+            print "Unable to connect to SQS queue %s" % queue
+            print (traceback.format_exc())
     except:
         print "Unable to connect to SQS region %s" % region
         print (traceback.format_exc())
@@ -23,7 +25,7 @@ def Connect(region="us-west-2", queue="WorkerQ"):
 
 def GetJsonMessage(q):
     while True:
-        rs = q.get_messages(1)
+        rs = q.get_messages(num_messages=1,  wait_time_seconds=60*5)
         if len(rs) > 0:
             break
     msg = rs[0].get_body()
@@ -45,9 +47,13 @@ def DoMessage(q,jmsg):
         q.write(m)
 
 if __name__ == "__main__":
-    q = Connect()
+    stime = time.time()
+    q = Connect(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
     m = GetJsonMessage(q)
     while m:
         DoMessage(q, m)
+	ctime = time.time()
+	# After 15 minutes, allow the driver to do maintainance
+	if ( (ctime-stime) > 60*15 ):
+	    exit(0)
         m = GetJsonMessage(q)
-
