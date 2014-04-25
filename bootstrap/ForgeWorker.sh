@@ -50,6 +50,6 @@ addgroup worker
 adduser --ingroup worker --disabled-login --gecos "Joe Worker" worker
 
 sudo -n -u worker bash -c "cd ~worker ; python /bin/get_bootstrap_file.py $REGION worker worker.tar | tar xvpo"
-sudo -n -u worker bash -c "cd ~worker ; git init . ; git remote add -t \* -f origin git@github.com:Ludovicus/WoW-Forge.git "
+sudo -n -u worker bash -c "cd ~worker ; git init . ; git remote add -t \* -f origin git@github.com:Ludovicus/WoW-Forge.git ; git checkout master"
 
 reboot
