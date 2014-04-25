@@ -38,7 +38,7 @@ import sys
 conn = S3Connection()
 bucket = conn.get_bucket("wow-forge-bootstrap")
 key  = bucket.get_key("%s/%s/%s" % (sys.argv[1], sys.argv[2], sys.argv[3]) )
-key.get_contents_to_file(stdout)
+key.get_contents_to_file(sys.stdout)
 EOF
 
 # Initial config file overrides
