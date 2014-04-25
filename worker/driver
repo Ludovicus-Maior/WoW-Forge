@@ -24,6 +24,11 @@ cd ~/worker
 
 logger $ONTTY -i -t WORKER -p user.info Worker starting. 
 
+. ~/.bash_aliases
+
+# Log the environment
+export | logger $ONTTY -i -t WORKER -p user.info
+
 while [ -s /tmp/worker.pid ] ; do
     # This runs for a bit and then exits to allow us to do administration.
     ./ProcessQueue.py
