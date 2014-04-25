@@ -19,7 +19,7 @@ dpkg-reconfigure -f noninteractive unattended-upgrades
 unattended-upgrade
 
 export INSTANCE_ID=$(wget -qO- http://169.254.169.254/latest/meta-data/instance-id)
-export AWS_REGION=$(wget -qO- http://169.254.169.254/latest/meta-data/placement/availability-zone | rev | cut -b 2- | rev)
+export REGION=$(wget -qO- http://169.254.169.254/latest/meta-data/placement/availability-zone | rev | cut -b 2- | rev)
 
 # Install all required PIPs
 pip install boto --upgrade
@@ -39,23 +39,20 @@ hostname $HOSTNAME
 cat <<'EOP'
 require 'aws-sdk'
 AWS.config(:credential_provider => AWS::Core::CredentialProviders::EC2Provider.new)
-AWS::S3.new.buckets["wow-forge-bootstrap-#{ARGV[0]}"].objects["#{ARGV[1]}/#{ARGV[2]}"].read { |chunk| print chunk }
+AWS::S3.new.buckets["wow-forge-bootstrap"].objects["#{ARGV[0]}/#{ARGV[1]}/#{ARGV[2]}"].read { |chunk| print chunk }
 EOP
 ) > /tmp/get_bootstrap_file.rb
 
 # Initial config file overrides
 cd /
-ruby /tmp/get_bootstrap_file.rb $AWS_REGION worker bootstrap.tar | tar xv
+ruby /tmp/get_bootstrap_file.rb $REGION worker root.tar | tar xvpo
 
 # Initial worker user setup
 addgroup worker
 adduser --ingroup worker --disabled-login --gecos "Joe Worker" worker
 
-# Allow "sudo reboot" -- move to worker/bootstrap.tar
-echo "worker ALL = (root) NOPASSWD: /sbin/reboot" > /etc/sudoers.d/65-forge-worker
-chmod 440 /etc/sudoers.d/65-forge-worker
-
 cd ~worker
-sudo worker ruby /tmp/get_bootstrap_file.rb $AWS_REGION worker worker.tar | tar xv
+sudo -n -u worker bash -c "ruby /tmp/get_bootstrap_file.rb $REGION worker worker.tar | tar xvpo"
+sudo -n -u worker bash -c "cd /home ; git clone git@github.com:Ludovicus/WoW-Forge.git worker"
 
 reboot
