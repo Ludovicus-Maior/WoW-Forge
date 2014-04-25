@@ -30,6 +30,17 @@ logger $ONTTY -i -t WORKER -p user.info Worker starting.
 export | logger $ONTTY -i -t WORKER -p user.info
 
 while [ -s /tmp/worker.pid ] ; do
+    # Check to see if there is new software
+    git fetch
+    LOCAL=$(git rev-parse master)
+    REMOTE=$(git rev-parse origin/master)
+    if [ $LOCAL != $REMOTE ] ; then
+        git pull
+        # Now restart
+        logger $ONTTY -i -t WORKER -p user.notice Restarting after update from $LOCAL to $REMOTE
+        rm /tmp/worker.pid
+        exec $0
+    fi
     # This runs for a bit and then exits to allow us to do administration.
     ./ProcessQueue.py
     status=$?
@@ -42,16 +53,6 @@ while [ -s /tmp/worker.pid ] ; do
         logger $ONTTY -i -t WORKER -p user.notice ProcessQueue detected reboot-required.  Rebooting
         sudo reboot
         exit 0
-    fi
-    # Check to see if there is new software
-    LOCAL=$(git rev-parse master)
-    REMOTE=$(git rev-parse origin/master)
-    if [ $LOCAL != $REMOTE ] ; then
-        git pull
-        # Now restart
-        logger $ONTTY -i -t WORKER -p user.notice Restarting after update from $LOCAL to $REMOTE
-        rm /tmp/worker.pid
-        exec $0
     fi
 done
 logger $ONTTY -i -t WORKER -p user.notice Stopping 
