@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
+from boto.s3.connection import S3Connection
+import exceptions
 import json
 from pprint import pprint
-from copy import deepcopy
 from types import *
 import MySQLdb
 import string
-import exceptions
+import sys
+
 
 #   {"id":21846,"disenchantingSkillRank":300,"description":"","name":"Spellfire Belt","icon":"inv_belt_04","stackable":1,"itemBind":2,
 #        "bonusStats":[{"stat":5,"amount":35,"reforged":false},{"stat":32,"amount":18,"reforged":false},{"stat":7,"amount":27,"reforged":false}],
@@ -33,14 +35,26 @@ import exceptions
 
 
 def ReadItemData():
-    json_file=open('itemdata_5.0.json')
+    conn = S3Connection()
+    bucket = conn.get_bucket("wow-forge-bootstrap")
+    key  = bucket.get_key("database/itemdata_5.0.json)
+    key.get_contents_to_filename("/tmp/itemdata_5.0.json"
+    json_file=open('/tmp/itemdata_5.0.json')
     json_data = json.load(json_file)
     json_file.close()
     return json_data
     
 def ConnectDatabase():
     global database
-    database=MySQLdb.connect(user="root",passwd="",db="Warcraft")
+    try:
+        db_host=os.environ['WF_RDS_HOST']
+        db_user=os.environ['WF_RDS_USER']
+        db_pass=os.environ['WF_RDS_PASSWORD']
+    except:
+        print "Missing environment variable setup for WF_RDS_*"
+        pass
+
+    database=MySQLdb.connect(host=db_host,user=db_user,passwd=db_pass,db="Warcraft")
     database.autocommit(True)
 
 TableFields = {}
@@ -121,7 +135,7 @@ def ReportData():
     pprint(unPackedBonuses)
 
 def UnpackItem(Item):
-    if Item['bonusStats'] == [] and  Item['itemSpells'] = [] and Item['itemLevel'] > 1 :
+    if Item['bonusStats'] == [] and  Item['itemSpells'] == [] and Item['itemLevel'] > 1 :
         # No stats, thats suspicicous!
         Item['randomEnchant'] = True
         
@@ -205,7 +219,7 @@ def LoadData(Data):
     for item in Data['items']:
         LoadItem(item)
         count = count + 1
-        if (count % 5000) == 0 :
+        if (count % 1000) == 0 :
             print "# Processed %d records" % count
 
 
