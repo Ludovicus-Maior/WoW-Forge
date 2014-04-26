@@ -37,8 +37,8 @@ import sys
 def ReadItemData():
     conn = S3Connection()
     bucket = conn.get_bucket("wow-forge-bootstrap")
-    key  = bucket.get_key("database/itemdata_5.0.json)
-    key.get_contents_to_filename("/tmp/itemdata_5.0.json"
+    key  = bucket.get_key("database/itemdata_5.0.json")
+    key.get_contents_to_filename("/tmp/itemdata_5.0.json")
     json_file=open('/tmp/itemdata_5.0.json')
     json_data = json.load(json_file)
     json_file.close()
