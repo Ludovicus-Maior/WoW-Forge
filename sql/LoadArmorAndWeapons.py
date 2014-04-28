@@ -6,6 +6,7 @@ import json
 from pprint import pprint
 from types import *
 import MySQLdb
+import os
 import string
 import sys
 
