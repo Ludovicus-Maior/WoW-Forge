@@ -20,12 +20,28 @@ unattended-upgrade
 
 export INSTANCE_ID=$(wget -qO- http://169.254.169.254/latest/meta-data/instance-id)
 export REGION=$(wget -qO- http://169.254.169.254/latest/meta-data/placement/availability-zone | rev | cut -b 2- | rev)
+export ITYPE=$(wget -qO- http://169.254.169.254/latest/meta-data/instance-type)
+
+# Initialize swap for small or micro instances
+case $ITYPE in
+*.micro|*.small)
+    dd if=/dev/zero of=/swap bs=1M count=1024
+    mkswap /swap
+    chown root:root /swap
+    chmod 600 /swap
+    echo "/swap swap swap defaults 0 0" >> /etc/fstab
+    swapon /swap
+    ;;
+*)
+    echo "No special actions for $ITYPE"
+    ;;
+esac
 
 # Install all required PIPs
 pip install boto --upgrade
 pip install mysql-python
 
-# Set the HOSTNAME, comes after potential Elastic IP assignment
+# Set the HOSTNAME
 export HOSTNAME=$(wget -qO- http://169.254.169.254/latest/meta-data/public-hostname)
 echo $HOSTNAME > /etc/hostname
 echo $HOSTNAME > /etc/mailname
