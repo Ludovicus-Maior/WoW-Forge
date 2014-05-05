@@ -148,74 +148,31 @@ def GetAuctionData(url):
     AH = json.load(tmp)
     return AH
      
-def ScanAuctionHouse(realm):
-    global accessAH
-    global realmInfo    
+def ScanAuctionHouse(zone,realm):   
     then = time.time()
-    print "# Checking data for realm [%s]" % realm
-    data = json.load(urllib.urlopen('http://us.battle.net/api/wow/auction/data/'+realm))
-    if realm in accessAH:
-        try:
-            if data['files'][0]['lastModified'] == accessAH[realm]:
-                print "# No new data since %s" % accessAH[realm]
-        except:
-            if ('reason' in data) and ('status' in data) and data['reason'] == u'Daily limit exceeded':
-                raise EOFError(data['reason'])
-            pprint(data)
-            print "# returned data malformed ^^^"
-            return
-    try:
-        realmInfo=LoadCache("realmInfo/%s.json" % realm)
-    except:
-        print "# creating new record for realm %s" % realm
-        realmInfo={}
-        realmInfo['toons'] = {}
-        realmInfo['guilds'] = {}
+    print "# Checking data for %s realm [%s]" % (zone,realm)
+    data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/" % zone) + realm))
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
+
+    # Process the AH data, generating new work and uopdating items along the way...
     ProcessAuctions(realm,'alliance',AH['alliance']['auctions'])
+    ScheduleNextAH()
     ProcessAuctions(realm,'horde',AH['horde']['auctions'])
+    ScheduleNextAH()
     ProcessAuctions(realm,'neutral',AH['neutral']['auctions'])
-    accessAH[realm]['lastModified'] = data['files'][0]['lastModified']
+    ScheduleNextAH()
+    FlushCachedData()
+
     now = time.time()
-    realmInfo['lastModified'] = accessAH[realm]['lastModified']
-    print "# Processed data from realm %s in %g seconds." % (realm, now-then)
-    SaveCache(realmInfo,"realmInfo/%s.json" % realm)
-    accessAH[realm]['toons'] = len( realmInfo['toons'] )
-    accessAH[realm]['guilds'] = len( realmInfo['guilds'] )
-    
+    print "# Processed data from %s realm %s in %g seconds." % (zone,realm, now-then)
         
 def ScanAuctionHouses(zone,realms=None):
     global accessAH
     
-    if not realms:
-        data = json.load(urllib.urlopen('http://us.battle.net/api/wow/realm/status'))
-        if not ('realms' in data):
-            pprint(data)
-            raise KeyError("No realm data")
-    
-        realms = map(lambda x: x['name'], data['realms'])
-        random.shuffle(realms)
-
-    # Initialize the data for all known realms
-    for realm in realms:
-        if not ( realm in accessAH ) :
-            accessAH[realm] = {}
-            accessAH[realm]['toons'] = 0
-            accessAH[realm]['guilds'] = 0
-            accessAH[realm]['lastModified'] = 0
-
-    print "# There are %d realms to process" % len(realms)
-    
-    # Put the realms we have not visitied in a while at the head
-    realms.sort(key=lambda x: accessAH[x]['lastModified'] )
-    
-    for realm in realms:
-        print "%s: %d" % (realm,  accessAH[realm]['lastModified'])
-    
-    for realm in realms:
+     for realm in realms:
         try:
-            ScanAuctionHouse(realm)
+            ScanAuctionHouse(zone,realm)
             time.sleep(1.0)
         except timeout.TimeoutError:
             traceback.print_exc()
@@ -233,20 +190,14 @@ def ScanAuctionHouses(zone,realms=None):
             traceback.print_exc()
             print "# Break after EOFError"
             break
-        SaveCache(randomEnchantItems,'randomEnchantItemsAH.json')    
-        SaveCache(accessAH,'AH_access.json')  
     
-randomEnchantItems=LoadCache('randomEnchantItemsAH.json')
-accessAH=LoadCache('AH_access.json')
 try:
-    if len(sys.argv) > 1:
-        ScanAuctionHouses('us.battle.net',realms=sys.argv[1:])
+    if len(sys.argv) > 2:
+        ScanAuctionHouses(zone=sys.argv[1],realms=sys.argv[1:])
     else:
-        ScanAuctionHouses('us.battle.net')
+        ScanAuctionHouses('US')
 except:
     traceback.print_exc()
-    SaveCache(randomEnchantItems,'randomEnchantItemsAH.json')
-    SaveCache(accessAH,'AH_access.json')
     pass
        
 
