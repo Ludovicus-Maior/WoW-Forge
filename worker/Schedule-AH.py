@@ -4,6 +4,7 @@ import boto.sqs
 import json
 import MySQLdb
 import os
+import sys
 import time
 import random
 
@@ -46,7 +47,10 @@ if __name__ == "__main__":
     region = "US"
     
     ConnectDatabase(True)
-    rr=SelectStaleRealm("US")
+    if len(sys.argv) > 1:
+	rr = [sys.argv[1], sys.argv[2]]
+    else:
+        rr=SelectStaleRealm("US")
     rr.insert(0,"Process-Realm.py")
     print json.dumps(rr)
     q = ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
