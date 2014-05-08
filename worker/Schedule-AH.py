@@ -6,7 +6,6 @@ import MySQLdb
 import os
 import sys
 import time
-import random
 
 def ConnectDatabase(auto_commit):
     global database
@@ -23,10 +22,10 @@ def ConnectDatabase(auto_commit):
 def ConnectSQS(region="us-west-1", queue="WorkerQ"):
     try:
         conn = boto.sqs.connect_to_region(region)
-	try:
+        try:
             q = conn.get_queue(queue)
             return q
-	except:
+        except:
             print "Unable to connect to SQS queue %s" % queue
             print (traceback.format_exc())
     except:
