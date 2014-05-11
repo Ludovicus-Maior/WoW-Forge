@@ -1,68 +1,83 @@
 #!/usr/bin/env python
 
 import json
-from pprint import pprint
-from types import *
-import MySQLdb
-import string
-import exceptions
 import urllib
 import time
-import random
 import timeout
 import sys
 import os
-import tempfile
-import traceback
 from urlparse import urlparse
-
-import xml.dom.minidom 
+import wf.logger
+import wf.rds
+import wf.schedule
 
 # {u'rand': 0, u'auc': 110488118, u'timeLeft': u'VERY_LONG', u'bid': 455000, u'item': 30282, u'seed': 65752064, u'ownerRealm': u'Ravencrest', u'owner': u'Skaramoush', u'buyout': 470000, u'quantity': 1}
 
 def IsItemKnown(id):
     return True
 
-def RecordRandomEnchant(id,enchant_rand,enchant_seed):
+toons = None
+def IsToonKnown(region, realm, toon):
+    global toons
+    if not toons:
+        toons = {}
+    if region not in toons:
+        toons[region] = {}
+    if realm not in toons[region]:
+        toons[region][realm] = wf.rds.GetToons(region, realm)
+    if toon not in toons[region][realm]:
+        # Mark the toon for later processing
+        toons[region][realm][toon] = False
+        return False
+    return True
+
+def FlushToons():
+    global toons
+    for region in toons:
+        for realm in toons[region]:
+            process_list = []
+            for toon in toons[region][realm]:
+                if not toons[region][realm][toon]:
+                    process_list.append(toon)
+                if len(process_list) > 256:
+                    wf.schedule.Schedule_Toons(region, realm, process_list)
+                    process_list = []
+            if len(process_list) > 0:
+                wf.schedule.Schedule_Toons(region, realm, process_list)
     return
 
-
-def IsToonKnown(realm,toon):
-    return False
-
-def QueryToon(realm,toon):
+siblings = None
+def RecordSibling(region, realm_main, realm_aux):
+    global siblings
+    if not siblings:
+        siblings = wf.rds.GetSiblings(region, realm_main)
+    if realm_aux not in siblings:
+        wf.logger.logger.info("Discovered sibling [%s] to [%s]" % (realm_aux, realm_main))
+        wf.rds.AddSibling(region, realm_main, realm_aux)
+        siblings.add(realm_aux)
     return
+
     
-def RecordSibling(realm_a,realm_b):
-    return
-    
-
-def ScheduleNextAH():
-    """Out of the AH which have not been scanned within the past 24 hours,
-       select the oldest to process next and queue a query for it.
-    """
-    return
-
-def FlushCachedData():
-    """Write any remaining queries or database updates. """
-    return
-    
-def ProcessAuctions(realm,faction,auctions):
-    print "#Processing %s faction" % faction
+def ProcessAuctions(region, realm, faction, auctions):
+    wf.logger.logger.info("Processing %s faction" % faction)
     for auction in auctions:
         ownerRealm = auction['ownerRealm']
         owner = auction['owner']
+        if owner == "???" or ownerRealm == "???":
+            continue
         if realm != ownerRealm:
-            RecordSibling(realm, ownerRealm)
-        if not IsToonKnown(ownerRealm, owner):
-            QueryToon(ownerRealm, owner)
+            RecordSibling(region, realm, ownerRealm)
+        IsToonKnown(region, ownerRealm, owner)
+
         id = auction['item']
         if not IsItemKnown(id):
             QueryItem(id)
         enchant_rand = auction['rand']
         enchant_seed = auction['seed'] & 0xffff
         if enchant_rand != 0:
-            RecordRandomEnchant(id,enchant_rand,enchant_seed)
+            wf.rds.RecordRandomEnchant(id, enchant_rand, enchant_seed)
+    FlushToons()
+    wf.rds.FlushRandomEnchant()
 
 _Progress=0
 def GetAuctionDataProgress(blocks, blocks_size, file_size):
@@ -71,7 +86,7 @@ def GetAuctionDataProgress(blocks, blocks_size, file_size):
         return
     so_far = (blocks * blocks_size) / (1.0 * file_size)
     if (so_far > (_Progress+0.2)):
-        print "# Read %4.2f%% of the AH data" % (so_far * 100)
+        wf.logger.logger.info("Read %4.2f%% of the AH data" % (so_far * 100))
         _Progress = so_far
 
 @timeout.timeout(240)
@@ -81,14 +96,14 @@ def GetAuctionData(url):
     guid = os.path.basename(os.path.dirname(parsed_url.path))
     tmp_name = "/tmp/%s.json" % guid
     if os.access(tmp_name,os.R_OK):
-        print "# Data already retrived, loading."
+        wf.logger.logger.warning( "Data already retrived, loading.")
         tmp = open(tmp_name, "r")
         AH = json.load(tmp)
         tmp.close()
         return AH
             
     tmp = open(tmp_name, "w+")
-    print "# Redirected to %s, saving in %s" % (url,tmp_name)
+    wf.logger.logger.info("Redirected to %s, saving in %s" % (url,tmp_name))
 
     attempts = 0
     while attempts < 3:
@@ -97,7 +112,7 @@ def GetAuctionData(url):
             info = None
             info=urllib.urlretrieve(url, filename=tmp_name, reporthook=GetAuctionDataProgress)
         except urllib.ContentTooShortError:
-            print "# Truncating file"
+            wf.logger.logger.warning("Truncating file")
             tmp.truncate(0)
         # Go to EOF
         tmp.seek(0,2) 
@@ -105,70 +120,70 @@ def GetAuctionData(url):
             break
         attempts += 1
         if info:
-            print "# Error status %s" % info[1].headers  
+            wf.logger.logger.error("Error status %s" % info[1].headers)
         tmp.seek(0,0)
-        print "# File contents: %s" % tmp.readlines()
+        wf.logger.logger.info("File contents: %s" % tmp.readlines())
         tmp.seek(0,0)
-        print "# No data found on %d attempt.  Napping and trying again." % attempts
+        wf.logger.logger.warning("No data found on %d attempt.  Napping and trying again." % attempts)
         time.sleep(5.0)
     tmp.seek(0,0)
     if attempts >= 3:
         raise ValueError("No data at %s" % url)
-    print "# Data retrived, loading"
+    wf.logger.logger.info("Data retrived, loading")
     AH = json.load(tmp)
     return AH
      
 def ScanAuctionHouse(zone,realm):   
     then = time.time()
-    print "# Checking data for %s realm [%s]" % (zone,realm)
+    wf.logger.logger.info("Checking data for %s realm [%s]" % (zone,realm))
     data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/" % zone) + realm))
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
 
     # Process the AH data, generating new work and uopdating items along the way...
-    ProcessAuctions(realm,'alliance',AH['alliance']['auctions'])
-    ScheduleNextAH()
-    ProcessAuctions(realm,'horde',AH['horde']['auctions'])
-    ScheduleNextAH()
-    ProcessAuctions(realm,'neutral',AH['neutral']['auctions'])
-    ScheduleNextAH()
-    FlushCachedData()
+    ProcessAuctions(zone, realm, 'alliance', AH['alliance']['auctions'])
+    wf.schedule.Schedule_AH(zone, None)
+    ProcessAuctions(zone, realm, 'horde', AH['horde']['auctions'])
+    wf.schedule.Schedule_AH(zone, None)
+    ProcessAuctions(zone, realm, 'neutral', AH['neutral']['auctions'])
+    wf.schedule.Schedule_AH(zone, None)
 
     now = time.time()
-    print "# Processed data from %s realm %s in %g seconds." % (zone,realm, now-then)
-        
-def ScanAuctionHouses(zone,realms=None):
-    global accessAH
+    wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone,realm, now-then))
+
+
+def ScanAuctionHouses(zone, realms=None):
     
     for realm in realms:
         try:
-            ScanAuctionHouse(zone,realm)
+            ScanAuctionHouse(zone, realm)
             time.sleep(1.0)
         except timeout.TimeoutError:
-            traceback.print_exc()
-            print "# Continue after TimeoutError"
+            wf.logger.logger.exception("Continue after TimeoutError")
             continue
         except KeyError:
-            traceback.print_exc()
-            print "# Continue after KeyError"
+            wf.logger.logger.exception("Continue after KeyError")
             continue    
         except ValueError:
-            traceback.print_exc()
-            print "# Continue after ValueError"
+            wf.logger.logger.exception("Continue after ValueError")
             continue
         except EOFError:
-            traceback.print_exc()
-            print "# Break after EOFError"
+            wf.logger.logger.exception("Break after EOFError")
             break
     
 try:
+    zone = None
+    realms = None
     if len(sys.argv) > 2:
-        ScanAuctionHouses(zone=sys.argv[1],realms=sys.argv[2:])
+        zone = sys.argv[1]
+        realms = sys.argv[2:]
+        ScanAuctionHouses(zone=zone, realms=realms)
     else:
-        ScanAuctionHouses('US')
+        zone = 'US'
+        ScanAuctionHouses(zone)
 except:
-    traceback.print_exc()
-    pass
+    wf.logger.logger.exception("Exception while calling ScanAuctionHouses(%s,%s)" % (zone, realms))
+    exit(1)
        
 
     

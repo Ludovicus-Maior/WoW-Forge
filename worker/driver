@@ -26,6 +26,8 @@ logger $ONTTY -i -t WORKER -p user.info Worker starting.
 
 . ~/.bash_aliases
 
+export PATH=~/worker:$PATH
+
 # Log the environment
 export | logger $ONTTY -i -t WORKER -p user.info
 
