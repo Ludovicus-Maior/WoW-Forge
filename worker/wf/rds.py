@@ -4,7 +4,7 @@
 import MySQLdb
 import os
 import datetime
-import traceback
+import string
 import wf.logger
 
 database = None
@@ -23,6 +23,58 @@ def ConnectDatabase(auto_commit):
     database = MySQLdb.connect(user=db_user, passwd=db_pass, host=db_host, db="Warcraft")
     database.autocommit(auto_commit)
 
+TableFields = {}
+def AnalyzeTable(table):
+    global database
+    global TableFields
+    if not database:
+        ConnectDatabase(True)
+    wf.logger.logger.info("Analyzing table %s" % table)
+    TableFields[table] = {}
+    c = database.cursor()
+    c.execute("""SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS`
+                     WHERE `TABLE_SCHEMA`='Warcraft' and `table_name` = %s ;""", (table,))
+    d = c.fetchone()
+    while d:
+        column = d[0]
+        TableFields[table][column] = True
+        d = c.fetchone()
+    c.close()
+
+
+ItemFieldsWritten={}
+def LoadItem2Table(Item, table):
+    global ItemFieldsWritten
+    global TableFields
+    global database
+    c = database.cursor()
+    cmd = "REPLACE INTO `Warcraft`.`%s` (" % table
+
+    if not table in TableFields:
+        raise KeyError("Hey!  Someone forgot to Analyze table %s" % table)
+
+    tfs = set(TableFields[table])
+    ifs = set(Item)
+    tks = list(tfs & ifs)
+    tks.sort()
+
+    cmd = cmd + string.join(tks, ',') + " ) VALUES ("
+    v = []
+    for tk in tks:
+        v.append('%('+tk+')s')
+        ItemFieldsWritten[tk] = True
+
+    cmd = cmd + string.join(v, ',') + ") ;"
+
+    try:
+        c.execute(cmd, Item)
+    except:
+        wf.logger.logger.exception("Exception with SQL %s" % c._last_executed)
+        raise
+    finally:
+        c.close()
+
+
 
 def SelectStaleRealm(region):
     global database
@@ -37,6 +89,7 @@ def SelectStaleRealm(region):
     now = datetime.datetime.utcnow()
     c.execute("""UPDATE `realmStatus` SET `enqueueTime` = %s WHERE `enqueueTime` IS NULL and `name` = %s and  `region` = %s;""",
               (now.isoformat(' '), realm, region))
+    c.close()
     return realm
 
 
@@ -55,6 +108,7 @@ def GetSiblings(region, realm):
         s.add(d[0])
         s.add(d[1])
         d = c.fetchone()
+    c.close()
     return s
 
 def AddSibling(region, realm_main, realm_aux):
@@ -69,7 +123,7 @@ def AddSibling(region, realm_main, realm_aux):
 
     c.execute("""INSERT INTO `realmSibling` (`realm`, `region`, `sibling`) VALUES (%s, %s, %s) ;""",
               (realm_main, region, realm_aux))
-
+    c.close()
 
 def GetToons(region, realm):
     global database
@@ -85,6 +139,7 @@ def GetToons(region, realm):
     while d is not None:
         h[d[0]] = d[1]
         d = c.fetchone()
+    c.close()
     return h
 
 
@@ -117,7 +172,7 @@ def RecordRandomEnchant(id, enchant_rand, enchant_seed):
     c.executemany("""INSERT INTO `itemSeeds` (`id`,`seed`,`count`) VALUES (%s,%s,1) ON DUPLICATE KEY UPDATE count=count+1;""",
               itemSeeds)
     itemSeeds = []
-
+    c.close()
     return
 
 def FlushRandomEnchant():
