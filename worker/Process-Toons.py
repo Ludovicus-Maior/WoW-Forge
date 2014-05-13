@@ -51,7 +51,8 @@ def ProcessToons(zone, realm, toons):
 
 
 
-# ["Process-Toons.py", "US", "Uldaman", "Drollete", "Chewrider", ...
+# ["Process-Toons.py", "US", "Uldaman", "Drollete", "Adelphus", "Impairment", "Tupperware", "Sabina", "Arandrie", "Soconfused", "Merryjayne", "Jenkillsguys", "Dyia", "Pennyroyal"
+# Process-Toons.py US Uldaman  "Drollete" "Adelphus" "Impairment" "Tupperware" "Sabina" "Arandrie" "Soconfused" "Merryjayne" "Jenkillsguys" "Dyia" "Pennyroyal"
 
 try:
     zone = None
@@ -63,4 +64,7 @@ try:
         toons = sys.argv[3:]
         ProcessToons(zone, realm, toons)
     else:
-        wf.logger.logger.error("Not enough arguments to %s", sys.argv[0])
+        wf.logger.logger.error("Not enough arguments to %s" % sys.argv[0])
+except StandardError:
+    wf.logger.logger.exception("Caught exception in %s" % sys.argv[0])
+    exit(1)
