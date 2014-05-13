@@ -177,3 +177,13 @@ def RecordRandomEnchant(id, enchant_rand, enchant_seed):
 
 def FlushRandomEnchant():
     RecordRandomEnchant(None, None, None)
+
+
+def ToonExists(region, realm, toon):
+    c = database.cursor()
+    cmd = "SELECT EXISTS(SELECT 1 FROM realmCharacter WHERE `region` = '%s' and `realm` = '%s' and `name` = '%s' );" % (region, realm, toon)
+    c.execute(cmd)
+    d = c.fetchone()
+    value = d[0]
+    c.close()
+    return value != 0
