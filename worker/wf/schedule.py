@@ -26,3 +26,12 @@ def Schedule_Toons(region, realm, toons):
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
         wf.sqs.PutSeq(q, rr)
+
+def Schedule_Guilds(region, realm, guilds):
+
+    rr = ["Process-Guilds.py", region, realm, ]
+    rr.extend(guilds)
+    wf.logger.logger.info(json.dumps(rr))
+    if "WF_SQS_REGION" in os.environ:
+        q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
+        wf.sqs.PutSeq(q, rr)

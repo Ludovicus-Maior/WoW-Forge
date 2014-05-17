@@ -33,13 +33,15 @@ def IsToonKnown(region, realm, toon):
 
 def FlushToons():
     global toons
+    if not toons:
+        return
     for region in toons:
         for realm in toons[region]:
             process_list = []
             for toon in toons[region][realm]:
                 if not toons[region][realm][toon]:
                     process_list.append(toon)
-                if len(process_list) > 256:
+                if len(process_list) > 100:
                     wf.schedule.Schedule_Toons(region, realm, process_list)
                     process_list = []
             if len(process_list) > 0:

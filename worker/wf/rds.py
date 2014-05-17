@@ -20,7 +20,7 @@ def ConnectDatabase(auto_commit):
         wf.logger.logger.exception("Missing environment variable setup for WF_RDS_*")
         raise
 
-    database = MySQLdb.connect(user=db_user, passwd=db_pass, host=db_host, db="Warcraft")
+    database = MySQLdb.connect(user=db_user, passwd=db_pass, host=db_host, db="Warcraft", use_unicode=True)
     database.autocommit(auto_commit)
 
 TableFields = {}
@@ -132,6 +132,25 @@ def GetToons(region, realm):
 
     c = database.cursor()
     c.execute("""SELECT `name`, `lastUpdate` FROM `realmCharacter` WHERE `region` = %s AND `realm` = %s ;""",
+              (region, realm))
+
+    d = c.fetchone()
+    h = {}
+    while d is not None:
+        h[d[0]] = d[1]
+#        print "# %s - %s: %s" % (region, realm, d[0])
+        d = c.fetchone()
+    c.close()
+    return h
+
+
+def GetGuilds(region, realm):
+    global database
+    if not database:
+        ConnectDatabase(True)
+
+    c = database.cursor()
+    c.execute('SELECT `name`, `lastUpdate` FROM `realmGuilds` WHERE `region` = %s AND `realm` = %s ;',
               (region, realm))
 
     d = c.fetchone()

@@ -5,8 +5,41 @@ import sys
 import timeout
 import urllib
 import wf.logger
+import wf.rds
+import wf.schedule
 
 
+guilds = None
+def IsGuildKnown(region, realm, guild):
+    global guilds
+    if not guilds:
+        guilds = {}
+    if region not in guilds:
+        guilds[region] = {}
+    if realm not in guilds[region]:
+        guilds[region][realm] = wf.rds.GetGuilds(region, realm)
+    if guild not in guilds[region][realm]:
+        # Mark the guild for later processing
+        guilds[region][realm][guild] = False
+        return False
+    return True
+
+def FlushGuilds():
+    global guilds
+    if not guilds:
+        return
+    for region in guilds:
+        for realm in guilds[region]:
+            process_list = []
+            for guild in guilds[region][realm]:
+                if not guilds[region][realm][guild]:
+                    process_list.append(guild)
+                if len(process_list) > 100:
+                    wf.schedule.Schedule_Guilds(region, realm, process_list)
+                    process_list = []
+            if len(process_list) > 0:
+                wf.schedule.Schedule_Guilds(region, realm, process_list)
+    return
 
 
 @timeout.timeout(8)
@@ -14,12 +47,13 @@ def GetToon(url):
     return json.load(urllib.urlopen(url))
 
 
-
 def ProcessToon(zone, realm, toon):
     try:
         url = "//%s.battle.net/api/wow/character/%s/%s" % (zone, realm, toon)
-        url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=guild'
+        url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=guild,items,talents'
         data = GetToon(url)
+        if not 'items' in data:
+            raise KeyError("Unable to locate toon [%s] in %s/%s" % (toon, realm, zone))
         for slot in data['items']:
             if type(data['items'][slot]) is dict:
                 if "id" in data['items'][slot]:
@@ -30,30 +64,34 @@ def ProcessToon(zone, realm, toon):
                     data[slot+"_suffix"] = data['items'][slot]["tooltipParams"]["suffix"]
                 if "seed" in data['items'][slot]["tooltipParams"]:
                     data[slot+"_seed"] = data['items'][slot]["tooltipParams"]["seed"]
+                if "suffix" in data['items'][slot]["tooltipParams"] and "seed" in data['items'][slot]["tooltipParams"]:
+                    wf.rds.RecordRandomEnchant(data[slot+"_id"], data[slot+"_suffix"],  data[slot+"_seed"])
         if "guild" in data:
             data["guildRealm"] = data["guild"]["realm"]
             data["guild"] = data["guild"]["name"]
+            IsGuildKnown(zone, realm, data["guild"])
         if ("talents" in data) and (len(data["talents"]) > 0) and ("spec" in data["talents"][0]):
             data["specName"] = data["talents"][0]["spec"]["name"]
-        LoadItem2Table(data,'realmCharacter')
+        data["region"] = zone
+        wf.rds.LoadItem2Table(data, 'realmCharacter')
     except (timeout.TimeoutError, IOError):
-        traceback.print_exc()
         wf.logger.logger.exception("Continue after ProcessToon(url=%s)" % url)
-
-
-
+    except KeyError, e:
+        wf.logger.logger.warning(e.message)
 
 
 
 def ProcessToons(zone, realm, toons):
     for toon in toons:
-        ProcessToon(zone, realm, toon)
-
+        ProcessToon(zone, realm, unicode(toon, encoding='utf-8'))
+    wf.rds.FlushRandomEnchant()
+    FlushGuilds()
 
 
 # ["Process-Toons.py", "US", "Uldaman", "Drollete", "Adelphus", "Impairment", "Tupperware", "Sabina", "Arandrie", "Soconfused", "Merryjayne", "Jenkillsguys", "Dyia", "Pennyroyal"
-# Process-Toons.py US Uldaman  "Drollete" "Adelphus" "Impairment" "Tupperware" "Sabina" "Arandrie" "Soconfused" "Merryjayne" "Jenkillsguys" "Dyia" "Pennyroyal"
+# Process-Toons.py US Uldaman  "Drollete" "Adelphus" "Impairment" "Tupperware" "Sabina" "Arandrie" "Soconfused" "Merryjayne" "Jenkillsguys" "Nojta" "
 
+wf.rds.AnalyzeTable('realmCharacter')
 try:
     zone = None
     realm = None
