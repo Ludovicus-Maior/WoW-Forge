@@ -55,6 +55,8 @@ def ProcessGuild(zone, realm, guild):
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=members'
         data = json.load(urllib.urlopen(url))
         for member in data['members']:
+            if member['character']['level'] < 11:
+                continue
             gtoon = member['character']['name']
             trealm = member['character']['realm']
             IsToonKnown(zone, trealm, gtoon)
