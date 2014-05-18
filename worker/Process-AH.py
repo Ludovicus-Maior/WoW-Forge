@@ -156,7 +156,7 @@ def ScanAuctionHouse(zone,realm):
 
 
 def ScanAuctionHouses(zone, realms=None):
-    
+    wf.logger.logger.info("ScanAuctionHouses(%s, %s)" % (zone, realms))
     for realm in realms:
         try:
             ScanAuctionHouse(zone, realm)

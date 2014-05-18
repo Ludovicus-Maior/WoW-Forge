@@ -82,6 +82,7 @@ def ProcessToon(zone, realm, toon):
 
 
 def ProcessToons(zone, realm, toons):
+    wf.logger.logger.info("ProcessToons(%s, %s, %s)" % (zone, realm, toons))
     for toon in toons:
         ProcessToon(zone, realm, unicode(toon, encoding='utf-8'))
     wf.rds.FlushRandomEnchant()

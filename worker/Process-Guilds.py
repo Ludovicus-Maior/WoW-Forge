@@ -70,6 +70,7 @@ def ProcessGuild(zone, realm, guild):
 
 
 def ProcessGuilds(zone, realm, guilds):
+    wf.logger.logger.info("ProcessGuilds(%s, %s, %s)" % (zone, realm, guilds))
     for guild in guilds:
         ProcessGuild(zone, realm, unicode(guild, encoding='utf-8'))
     FlushToons()
