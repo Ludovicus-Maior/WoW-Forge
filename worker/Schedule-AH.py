@@ -8,8 +8,8 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         region = sys.argv[1]
-        realm = sys.argv[2]
+        realms = sys.argv[2:]
     else:
-        realm = None
+        realms = None
 
-    wf.schedule.Schedule_AH(region, realm)
+    wf.schedule.Schedule_AH(region, realms)

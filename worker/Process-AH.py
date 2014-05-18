@@ -98,7 +98,7 @@ def GetAuctionData(url):
     guid = os.path.basename(os.path.dirname(parsed_url.path))
     tmp_name = "/tmp/%s.json" % guid
     if os.access(tmp_name,os.R_OK):
-        wf.logger.logger.warning( "Data already retrived, loading.")
+        wf.logger.logger.warning( "Data already retrieved, loading.")
         tmp = open(tmp_name, "r")
         AH = json.load(tmp)
         tmp.close()
@@ -117,22 +117,23 @@ def GetAuctionData(url):
             wf.logger.logger.warning("Truncating file")
             tmp.truncate(0)
         # Go to EOF
-        tmp.seek(0,2) 
+        tmp.seek(0, 2)
         if tmp.tell() > 1024:
             break
         attempts += 1
         if info:
             wf.logger.logger.error("Error status %s" % info[1].headers)
-        tmp.seek(0,0)
+        tmp.seek(0, 0)
         wf.logger.logger.info("File contents: %s" % tmp.readlines())
-        tmp.seek(0,0)
+        tmp.seek(0, 0)
         wf.logger.logger.warning("No data found on %d attempt.  Napping and trying again." % attempts)
         time.sleep(5.0)
-    tmp.seek(0,0)
+    tmp.seek(0, 0)
     if attempts >= 3:
         raise ValueError("No data at %s" % url)
     wf.logger.logger.info("Data retrived, loading")
     AH = json.load(tmp)
+    os.remove(tmp_name)
     return AH
      
 def ScanAuctionHouse(zone,realm):   

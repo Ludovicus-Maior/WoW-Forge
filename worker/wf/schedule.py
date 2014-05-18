@@ -5,11 +5,12 @@ import wf.rds
 import wf.sqs
 
 
-def Schedule_AH(region, realm=None):
+def Schedule_AH(region, realms=None):
 
-    if not realm:
-        realm = wf.rds.SelectStaleRealm(region)
-    rr = ["Process-Realm.py", region, realm]
+    if not realms:
+        realms = [wf.rds.SelectStaleRealm(region)]
+    rr = ["Process-AH.py", region]
+    rr.extend(realms)
     wf.logger.logger.info(json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])

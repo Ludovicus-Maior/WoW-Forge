@@ -8,7 +8,7 @@ import sys
 import time
 import traceback
 import wf.logger
-
+import wf.schedule
 
 def Connect(region="us-west-2", queue="WorkerQ"):
     try:
@@ -28,7 +28,7 @@ def GetJsonMessage(q):
     if len(rs) == 0:
         return None
     msg = rs[0].get_body()
-    q.delete_message(msg)
+    q.delete_message(rs[0])
     jmsg = json.loads(msg)
     return jmsg
 
@@ -52,6 +52,8 @@ if __name__ == "__main__":
     while True:
         if m:
             DoMessage(q, m)
+	else:
+            wf.schedule.Schedule_AH("US")
         ctime = time.time()
         # After 15 minutes, allow the driver to do maintainance
         if ( (ctime-stime) > 60*15 ):
