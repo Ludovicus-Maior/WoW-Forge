@@ -6,6 +6,7 @@ import os
 import datetime
 import string
 import wf.logger
+import _mysql_exceptions
 
 database = None
 
@@ -42,7 +43,7 @@ def AnalyzeTable(table):
     c.close()
 
 
-ItemFieldsWritten={}
+ItemFieldsWritten = {}
 def LoadItem2Table(Item, table):
     global ItemFieldsWritten
     global TableFields
@@ -57,6 +58,7 @@ def LoadItem2Table(Item, table):
     ifs = set(Item)
     tks = list(tfs & ifs)
     tks.sort()
+    item = {k: Item[k] for k in tks}
 
     cmd = cmd + string.join(tks, ',') + " ) VALUES ("
     v = []
@@ -67,9 +69,9 @@ def LoadItem2Table(Item, table):
     cmd = cmd + string.join(v, ',') + ") ;"
 
     try:
-        c.execute(cmd, Item)
-    except:
-        wf.logger.logger.exception("Exception with SQL %s" % c._last_executed)
+        c.execute(cmd, item)
+    except _mysql_exceptions.MySQLError:
+        wf.logger.logger.exception("LoadItem2Table Exception with Table %s, Items %s % (table, item))
         raise
     finally:
         c.close()
