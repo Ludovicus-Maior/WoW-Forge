@@ -71,7 +71,7 @@ def LoadItem2Table(Item, table):
     try:
         c.execute(cmd, item)
     except _mysql_exceptions.MySQLError:
-        wf.logger.logger.exception("LoadItem2Table Exception with Table %s, Items %s % (table, item))
+        wf.logger.logger.exception("LoadItem2Table Exception with Table %s, Items %s" % (table, item))
         raise
     finally:
         c.close()
@@ -90,6 +90,18 @@ def SelectStaleRealm(region):
     realm = d[0]
     now = datetime.datetime.utcnow()
     c.execute("""UPDATE `realmStatus` SET `enqueueTime` = %s WHERE `enqueueTime` IS NULL and `name` = %s and  `region` = %s;""",
+              (now.isoformat(' '), realm, region))
+    c.close()
+    return realm
+
+
+def FinishedRealm(region, realm):
+    global database
+    if not database:
+        ConnectDatabase(True)
+
+    now = datetime.datetime.utcnow()
+    c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
               (now.isoformat(' '), realm, region))
     c.close()
     return realm
@@ -208,3 +220,26 @@ def ToonExists(region, realm, toon):
     value = d[0]
     c.close()
     return value != 0
+
+
+def LookupRealm2Slug(region, realm):
+    global database
+    if not database:
+        ConnectDatabase(True)
+
+    c = database.cursor()
+    c.execute("""SELECT `slug` FROM `realmStatus` WHERE `region` = %s AND `name` = %s;""" ,
+              (region, realm))
+    d = c.fetchone()
+    slug = d[0]
+    c.close()
+    return slug
+
+realm2slug={}
+def Realm2Slug(region, realm):
+    global realm2slug
+    if not region in realm2slug:
+        realm2slug[region] = {}
+    if not realm in realm2slug[region]:
+        realm2slug[region][realm] = LookupRealm2Slug(region, realm)
+    return realm2slug[region][realm]
