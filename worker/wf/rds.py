@@ -231,6 +231,8 @@ def LookupRealm2Slug(region, realm):
     c.execute("""SELECT `slug` FROM `realmStatus` WHERE `region` = %s AND `name` = %s;""" ,
               (region, realm))
     d = c.fetchone()
+    if d is None:
+        raise KeyError("Unknown realm [%s] in region %s" % (realm, region))
     slug = d[0]
     c.close()
     return slug
