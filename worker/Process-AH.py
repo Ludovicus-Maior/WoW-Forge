@@ -139,7 +139,8 @@ def GetAuctionData(url):
 def ScanAuctionHouse(zone, realm):
     then = time.time()
     wf.logger.logger.info("Checking data for %s realm [%s]" % (zone,realm))
-    data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/" % zone) + realm))
+    slug = wf.rds.Realm2Slug(zone, realm)
+    data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/" % slug) + realm))
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
 

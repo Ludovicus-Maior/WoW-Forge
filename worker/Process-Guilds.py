@@ -51,7 +51,8 @@ def GetGuild(url):
 
 def ProcessGuild(zone, realm, guild):
     try:
-        url = "//%s.battle.net/api/wow/guild/%s/%s" % (zone, realm, guild)
+        slug = wf.rds.Realm2Slug(zone, realm)
+        url = "//%s.battle.net/api/wow/guild/%s/%s" % (zone, slug, guild)
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=members'
         data = json.load(urllib.urlopen(url))
         for member in data['members']:

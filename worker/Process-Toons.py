@@ -49,7 +49,8 @@ def GetToon(url):
 
 def ProcessToon(zone, realm, toon):
     try:
-        url = "//%s.battle.net/api/wow/character/%s/%s" % (zone, realm, toon)
+        slug = wf.rds.Realm2Slug(zone, realm)
+        url = "//%s.battle.net/api/wow/character/%s/%s" % (zone, slug, toon)
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=guild,items,talents'
         data = GetToon(url)
         if not 'items' in data:
