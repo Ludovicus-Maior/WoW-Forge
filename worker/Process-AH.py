@@ -136,23 +136,23 @@ def GetAuctionData(url):
     os.remove(tmp_name)
     return AH
      
-def ScanAuctionHouse(zone,realm):   
+def ScanAuctionHouse(zone, realm):
     then = time.time()
     wf.logger.logger.info("Checking data for %s realm [%s]" % (zone,realm))
     data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/" % zone) + realm))
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
 
-    # Process the AH data, generating new work and uopdating items along the way...
+    # Process the AH data, generating new work and updating items along the way...
     ProcessAuctions(zone, realm, 'alliance', AH['alliance']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
     ProcessAuctions(zone, realm, 'horde', AH['horde']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
     ProcessAuctions(zone, realm, 'neutral', AH['neutral']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
-
+    wf.rds.FinishedRealm(zone, realm)
     now = time.time()
-    wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone,realm, now-then))
+    wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone, realm, now-then))
 
 
 def ScanAuctionHouses(zone, realms=None):
