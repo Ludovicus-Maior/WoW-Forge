@@ -237,6 +237,8 @@ def LookupRealm2Slug(region, realm):
     c.close()
     return slug
 
+
+
 realm2slug={}
 def Realm2Slug(region, realm):
     global realm2slug
