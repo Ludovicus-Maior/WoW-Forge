@@ -11,12 +11,16 @@ import wf.logger
 import wf.rds
 import wf.schedule
 
-# {u'rand': 0, u'auc': 110488118, u'timeLeft': u'VERY_LONG', u'bid': 455000, u'item': 30282, u'seed': 65752064, u'ownerRealm': u'Ravencrest', u'owner': u'Skaramoush', u'buyout': 470000, u'quantity': 1}
+# {u'rand': 0, u'auc': 110488118, u'timeLeft': u'VERY_LONG', u'bid': 455000, u'item': 30282, u'seed': 65752064,
+# u'ownerRealm': u'Ravencrest', u'owner': u'Skaramoush', u'buyout': 470000, u'quantity': 1}
 
 def IsItemKnown(id):
     return True
 
+
 toons = None
+
+
 def IsToonKnown(region, realm, toon):
     global toons
     if not toons:
@@ -30,6 +34,7 @@ def IsToonKnown(region, realm, toon):
         toons[region][realm][toon] = False
         return False
     return True
+
 
 def FlushToons():
     global toons
@@ -48,7 +53,10 @@ def FlushToons():
                 wf.schedule.Schedule_Toons(region, realm, process_list)
     return
 
+
 siblings = None
+
+
 def RecordSibling(region, realm_main, realm_aux):
     global siblings
     if not siblings:
@@ -59,7 +67,7 @@ def RecordSibling(region, realm_main, realm_aux):
         siblings.add(realm_aux)
     return
 
-    
+
 def ProcessAuctions(region, realm, faction, auctions):
     wf.logger.logger.info("Processing %s faction" % faction)
     for auction in auctions:
@@ -81,15 +89,19 @@ def ProcessAuctions(region, realm, faction, auctions):
     FlushToons()
     wf.rds.FlushRandomEnchant()
 
-_Progress=0
+
+_Progress = 0
+
+
 def GetAuctionDataProgress(blocks, blocks_size, file_size):
     global _Progress
     if file_size < 0:
         return
     so_far = (blocks * blocks_size) / (1.0 * file_size)
-    if (so_far > (_Progress+0.2)):
+    if (so_far > (_Progress + 0.2)):
         wf.logger.logger.info("Read %4.2f%% of the AH data" % (so_far * 100))
         _Progress = so_far
+
 
 @timeout.timeout(240)
 def GetAuctionData(url):
@@ -97,22 +109,22 @@ def GetAuctionData(url):
     parsed_url = urlparse(url)
     guid = os.path.basename(os.path.dirname(parsed_url.path))
     tmp_name = "/tmp/%s.json" % guid
-    if os.access(tmp_name,os.R_OK):
-        wf.logger.logger.warning( "Data already retrieved, loading.")
+    if os.access(tmp_name, os.R_OK):
+        wf.logger.logger.warning("Data already retrieved, loading.")
         tmp = open(tmp_name, "r")
         AH = json.load(tmp)
         tmp.close()
         return AH
-            
+
     tmp = open(tmp_name, "w+")
-    wf.logger.logger.info("Redirected to %s, saving in %s" % (url,tmp_name))
+    wf.logger.logger.info("Redirected to %s, saving in %s" % (url, tmp_name))
 
     attempts = 0
     while attempts < 3:
         _Progress = 0
         try:
             info = None
-            info=urllib.urlretrieve(url, filename=tmp_name, reporthook=GetAuctionDataProgress)
+            info = urllib.urlretrieve(url, filename=tmp_name, reporthook=GetAuctionDataProgress)
         except urllib.ContentTooShortError:
             wf.logger.logger.warning("Truncating file")
             tmp.truncate(0)
@@ -135,10 +147,11 @@ def GetAuctionData(url):
     AH = json.load(tmp)
     os.remove(tmp_name)
     return AH
-     
+
+
 def ScanAuctionHouse(zone, realm):
     then = time.time()
-    wf.logger.logger.info("Checking data for %s realm [%s]" % (zone,realm))
+    wf.logger.logger.info("Checking data for %s realm [%s]" % (zone, realm))
     slug = wf.rds.Realm2Slug(zone, realm)
     data = json.load(urllib.urlopen(("http://%s.battle.net/api/wow/auction/data/%s" % (zone, slug))))
     url = data['files'][0]['url']
@@ -153,7 +166,7 @@ def ScanAuctionHouse(zone, realm):
     wf.schedule.Schedule_AH(zone, None)
     wf.rds.FinishedRealm(zone, realm)
     now = time.time()
-    wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone, realm, now-then))
+    wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone, realm, now - then))
 
 
 def ScanAuctionHouses(zone, realms=None):
@@ -167,14 +180,15 @@ def ScanAuctionHouses(zone, realms=None):
             continue
         except KeyError:
             wf.logger.logger.exception("Continue after KeyError")
-            continue    
+            continue
         except ValueError:
             wf.logger.logger.exception("Continue after ValueError")
             continue
         except EOFError:
             wf.logger.logger.exception("Break after EOFError")
             break
-    
+
+
 try:
     zone = None
     realms = None

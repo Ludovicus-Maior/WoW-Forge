@@ -2,6 +2,7 @@
 
 
 import MySQLdb
+import fuzzy
 import os
 import datetime
 import string
@@ -222,20 +223,23 @@ def ToonExists(region, realm, toon):
     return value != 0
 
 
-def LookupRealm2Slug(region, realm):
+def LookupRegionSlugs(region):
     global database
     if not database:
         ConnectDatabase(True)
 
     c = database.cursor()
-    c.execute("""SELECT `slug` FROM `realmStatus` WHERE `region` = %s AND `name` = %s;""" ,
-              (region, realm))
+    c.execute("""SELECT `name`, `slug` FROM `realmStatus` WHERE `region` = %s;""" ,
+              (region,))
     d = c.fetchone()
-    if d is None:
-        raise KeyError("Unknown realm [%s] in region %s" % (realm, region))
-    slug = d[0]
+    h = {}
+
+    while d is not None:
+        h[d[0]] = d[1]
+        h[fuzzy.nysiis(d[0])] = d[1]
+        d = c.fetchone()
     c.close()
-    return slug
+    return h
 
 
 
@@ -243,7 +247,8 @@ realm2slug={}
 def Realm2Slug(region, realm):
     global realm2slug
     if not region in realm2slug:
-        realm2slug[region] = {}
+        realm2slug[region] = LookupRegionSlugs(region)
     if not realm in realm2slug[region]:
-        realm2slug[region][realm] = LookupRealm2Slug(region, realm)
+        # Lets see if we can find an alias for it
+        realm = fuzzy.nysiis(realm)
     return realm2slug[region][realm]
