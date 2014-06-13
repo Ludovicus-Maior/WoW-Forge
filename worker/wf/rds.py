@@ -88,6 +88,8 @@ def SelectStaleRealm(region):
     c.execute("""SELECT `name` FROM `realmStatus` WHERE `region` = %s AND `enqueueTime` IS NULL ORDER BY `lastAuctionScan` LIMIT 1;""" ,
               (region,))
     d = c.fetchone()
+    if d is None:
+        return None
     realm = d[0]
     now = datetime.datetime.utcnow()
     c.execute("""UPDATE `realmStatus` SET `enqueueTime` = %s WHERE `enqueueTime` IS NULL and `name` = %s and  `region` = %s;""",
@@ -102,10 +104,21 @@ def FinishedRealm(region, realm):
         ConnectDatabase(True)
 
     now = datetime.datetime.utcnow()
+    c = database.cursor()
     c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
               (now.isoformat(' '), realm, region))
     c.close()
     return realm
+
+
+def ResetRealms():
+    global database
+    if not database:
+        ConnectDatabase(True)
+
+    c = database.cursor()
+    c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL;""")
+    c.close()
 
 
 def GetSiblings(region, realm):

@@ -8,7 +8,12 @@ import wf.sqs
 def Schedule_AH(region, realms=None):
 
     if not realms:
-        realms = [wf.rds.SelectStaleRealm(region)]
+        realm = wf.rds.SelectStaleRealm(region)
+        if realm:
+            realms = [realm]
+        else:
+            wf.logger.logger.warning("Schedule_AH: There were no stale realms!")
+            return
     rr = ["Process-AH.py", region]
     rr.extend(realms)
     wf.logger.logger.info(json.dumps(rr))
