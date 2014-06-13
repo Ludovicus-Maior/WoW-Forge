@@ -40,6 +40,7 @@ esac
 # Install all required PIPs
 pip install boto --upgrade
 pip install mysql-python
+pip install fuzzy
 
 # Set the HOSTNAME
 export HOSTNAME=$(wget -qO- http://169.254.169.254/latest/meta-data/public-hostname)

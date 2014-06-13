@@ -42,7 +42,7 @@ def FlushGuilds():
     return
 
 
-@timeout.timeout(8)
+@timeout.timeout(16)
 def GetToon(url):
     return json.load(urllib.urlopen(url))
 

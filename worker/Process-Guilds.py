@@ -44,7 +44,7 @@ def FlushToons():
     return
 
 
-@timeout.timeout(8)
+@timeout.timeout(16)
 def GetGuild(url):
     return json.load(urllib.urlopen(url))
 
