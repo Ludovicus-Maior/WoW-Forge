@@ -21,17 +21,17 @@ def IsItemKnown(id):
 toons = None
 
 
-def IsToonKnown(region, realm, toon):
+def IsToonKnown(region, slug, toon):
     global toons
     if not toons:
         toons = {}
     if region not in toons:
         toons[region] = {}
-    if realm not in toons[region]:
-        toons[region][realm] = wf.rds.GetToons(region, realm)
-    if toon not in toons[region][realm]:
+    if slug not in toons[region]:
+        toons[region][slug] = wf.rds.GetToons(region, slug)
+    if toon not in toons[region][slug]:
         # Mark the toon for later processing
-        toons[region][realm][toon] = False
+        toons[region][slug][toon] = False
         return False
     return True
 
@@ -41,43 +41,44 @@ def FlushToons():
     if not toons:
         return
     for region in toons:
-        for realm in toons[region]:
+        for slug in toons[region]:
             process_list = []
-            for toon in toons[region][realm]:
-                if not toons[region][realm][toon]:
+            for toon in toons[region][slug]:
+                if not toons[region][slug][toon]:
                     process_list.append(toon)
                 if len(process_list) > 100:
-                    wf.schedule.Schedule_Toons(region, realm, process_list)
+                    wf.schedule.Schedule_Toons(region, slug, process_list)
                     process_list = []
             if len(process_list) > 0:
-                wf.schedule.Schedule_Toons(region, realm, process_list)
+                wf.schedule.Schedule_Toons(region, slug, process_list)
     return
 
 
 siblings = None
 
 
-def RecordSibling(region, realm_main, realm_aux):
+def RecordSibling(region, slug_main, slug_aux):
     global siblings
     if not siblings:
-        siblings = wf.rds.GetSiblings(region, realm_main)
-    if realm_aux not in siblings:
-        wf.logger.logger.info("Discovered sibling [%s] to [%s]" % (realm_aux, realm_main))
-        wf.rds.AddSibling(region, realm_main, realm_aux)
-        siblings.add(realm_aux)
+        siblings = wf.rds.GetSiblings(region, slug_main)
+    if slug_aux not in siblings:
+        wf.logger.logger.info("Discovered sibling [%s] to [%s]" % (slug_aux, slug_main))
+        wf.rds.AddSibling(region, slug_main, slug_aux)
+        siblings.add(slug_aux)
     return
 
 
-def ProcessAuctions(region, realm, faction, auctions):
-    wf.logger.logger.info("Processing %s faction" % faction)
+def ProcessAuctions(region, slug, faction, auctions):
+    wf.logger.logger.info("Processing %s faction %s" % (slug, faction))
     for auction in auctions:
         ownerRealm = auction['ownerRealm']
+        ownerSlug = wf.rds.Realm2Slug(region, ownerRealm)
         owner = auction['owner']
         if owner == "???" or ownerRealm == "???":
             continue
-        if realm != ownerRealm:
-            RecordSibling(region, realm, ownerRealm)
-        IsToonKnown(region, ownerRealm, owner)
+        if slug != ownerSlug:
+            RecordSibling(region, slug, ownerSlug)
+        IsToonKnown(region, ownerSlug, owner)
 
         id = auction['item']
         if not IsItemKnown(id):
@@ -158,11 +159,11 @@ def ScanAuctionHouse(zone, realm):
     AH = GetAuctionData(url)
 
     # Process the AH data, generating new work and updating items along the way...
-    ProcessAuctions(zone, realm, 'alliance', AH['alliance']['auctions'])
+    ProcessAuctions(zone, slug, 'alliance', AH['alliance']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
-    ProcessAuctions(zone, realm, 'horde', AH['horde']['auctions'])
+    ProcessAuctions(zone, slug, 'horde', AH['horde']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
-    ProcessAuctions(zone, realm, 'neutral', AH['neutral']['auctions'])
+    ProcessAuctions(zone, slug, 'neutral', AH['neutral']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
     wf.rds.FinishedRealm(zone, realm)
     now = time.time()

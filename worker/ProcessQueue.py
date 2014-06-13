@@ -9,18 +9,7 @@ import time
 import traceback
 import wf.logger
 import wf.schedule
-
-def Connect(region="us-west-2", queue="WorkerQ"):
-    try:
-        conn = boto.sqs.connect_to_region(region)
-        try:
-            q = conn.get_queue(queue)
-            return q
-        except:
-            wf.logger.logger.exception("Unable to connect to SQS queue %s" % queue)
-    except:
-        wf.logger.logger.exception("Unable to connect to SQS region %s" % region)
-    exit(1)
+import wf.sqs
 
 
 def GetJsonMessage(q):
@@ -47,7 +36,7 @@ def DoMessage(q,jmsg):
 
 if __name__ == "__main__":
     stime = time.time()
-    q = Connect(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
+    q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
     m = GetJsonMessage(q)
     while True:
         if m:

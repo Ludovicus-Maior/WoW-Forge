@@ -251,4 +251,4 @@ def Realm2Slug(region, realm):
     if not realm in realm2slug[region]:
         # Lets see if we can find an alias for it
         realm = fuzzy.nysiis(realm)
-    return realm2slug[region][realm]
+    return realm2slug[region].get(realm)
