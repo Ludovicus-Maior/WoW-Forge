@@ -1,8 +1,14 @@
 import logging
 import logging.handlers
 import os
+import sys
 
-logger = logging.getLogger('WF')
+if sys.argv[0] and os.path.splitext(sys.argv[0]) == "py":
+    s = os.path.split(sys.argv[0])
+    logger = logging.getLogger(s[1])
+else:
+    logger = logging.getLogger('WF')
+
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
