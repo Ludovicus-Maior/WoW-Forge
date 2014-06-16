@@ -158,6 +158,9 @@ def ScanAuctionHouse(zone, realm):
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
 
+    if wf.util.IsLimitExceeded(AH):
+        wf.logger.logger.error("Daily limit exceeded, exiting.")
+        exit(2)
     # Process the AH data, generating new work and updating items along the way...
     ProcessAuctions(zone, slug, 'alliance', AH['alliance']['auctions'])
     wf.schedule.Schedule_AH(zone, None)

@@ -53,6 +53,9 @@ def ProcessToon(zone, realm, toon):
         url = "//%s.battle.net/api/wow/character/%s/%s" % (zone, slug, toon)
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=guild,items,talents'
         data = GetToon(url)
+        if wf.util.IsLimitExceeded(data):
+            wf.logger.logger.error("Daily limit exceeded, exiting.")
+            exit(2)
         if not 'items' in data:
             raise KeyError("Unable to locate toon [%s] in %s/%s" % (toon, realm, zone))
         for slot in data['items']:

@@ -7,6 +7,7 @@ import urllib
 import wf.logger
 import wf.rds
 import wf.schedule
+import wf.util
 
 
 toons = None
@@ -55,6 +56,9 @@ def ProcessGuild(zone, realm, guild):
         url = "//%s.battle.net/api/wow/guild/%s/%s" % (zone, slug, guild)
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=members'
         data = json.load(urllib.urlopen(url))
+        if wf.util.IsLimitExceeded(data):
+            wf.logger.logger.error("Daily limit exceeded, exiting.")
+            exit(2)
         for member in data['members']:
             if member['character']['level'] < 11:
                 continue
@@ -66,7 +70,7 @@ def ProcessGuild(zone, realm, guild):
     except (timeout.TimeoutError, IOError):
         wf.logger.logger.exception("Continue after ProcessGuild(url=%s)" % url)
     except KeyError, e:
-        wf.logger.logger.warning(e.message)
+        wf.logger.logger.error(e.message)
 
 
 
