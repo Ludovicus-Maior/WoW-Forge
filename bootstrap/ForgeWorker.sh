@@ -41,6 +41,7 @@ esac
 pip install boto --upgrade
 pip install mysql-python
 pip install fuzzy
+pip install requests
 
 # Set the HOSTNAME
 export HOSTNAME=$(wget -qO- http://169.254.169.254/latest/meta-data/public-hostname)
@@ -64,7 +65,7 @@ python /bin/get_bootstrap_file.py $REGION worker root.tar | tar xvpo
 
 # Initial worker user setup
 addgroup worker
-adduser --ingroup worker --disabled-login --gecos "Joe Worker" worker
+adduser --ingroup worker --disabled-login --ingroup adm --gecos "Joe Worker" worker
 
 sudo -n -u worker bash -c "cd ~worker ; python /bin/get_bootstrap_file.py $REGION worker worker.tar | tar xvpo"
 sudo -n -u worker bash -c "cd ~worker ; git init . ; git remote add -t \* -f origin git@github.com:Ludovicus/WoW-Forge.git ; git checkout master"
