@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 
-import boto.sqs
-import json
 import os
 import subprocess
-import sys
 import time
-import traceback
 import wf.logger
 import wf.schedule
 import wf.sqs
