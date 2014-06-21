@@ -111,13 +111,6 @@ def GetAuctionData(url):
     parsed_url = urlparse(url)
     guid = os.path.basename(os.path.dirname(parsed_url.path))
     tmp_name = "/tmp/%s.json" % guid
-    if os.access(tmp_name, os.R_OK):
-        wf.logger.logger.warning("Data already retrieved, loading.")
-        tmp = open(tmp_name, "r")
-        AH = json.load(tmp)
-        tmp.close()
-        return AH
-
     tmp = open(tmp_name, "w+")
     wf.logger.logger.info("Redirected to %s, saving in %s" % (url, tmp_name))
 

@@ -84,7 +84,7 @@ def ProcessGuild(zone, realm, guild):
     except KeyError, e:
         wf.logger.logger.error(e.message)
     finally:
-         wf.logger.logger.info("Processed guild %s|%s, New=%d, Old=%d, Underage=%d" % (guild, realm, toons['new'], toons['underage'], toons['old']))
+         wf.logger.logger.info("Processed guild %s|%s, New=%d, Underage=%d, Old=%d" % (guild, realm, toons['new'], toons['underage'], toons['old']))
 
 
 def ProcessGuilds(zone, realm, guilds):
