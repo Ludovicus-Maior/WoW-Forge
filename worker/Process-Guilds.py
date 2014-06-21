@@ -38,6 +38,7 @@ def FlushToons():
             for toon in toons[region][realm]:
                 if not toons[region][realm][toon]:
                     process_list.append(toon)
+                    toons[region][realm][toon] = True
                 if len(process_list) > 100:
                     wf.schedule.Schedule_Toons(region, realm, process_list)
                     process_list = []
@@ -90,7 +91,7 @@ def ProcessGuilds(zone, realm, guilds):
     wf.logger.logger.info("ProcessGuilds(%s, %s, %s)" % (zone, realm, guilds))
     for guild in guilds:
         ProcessGuild(zone, realm, unicode(guild, encoding='utf-8'))
-    FlushToons()
+        FlushToons()
 
 
 # ["Process-Guilds.py", "US", "Uldaman", "Two Percent", "THREE D"]
