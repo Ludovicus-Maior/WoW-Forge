@@ -51,6 +51,8 @@ def GetToon(url):
 old_guilds = 0
 new_guilds = 0
 toons_loaded = 0
+race2side = { 1:0, 5:1, 11:0, 7:0, 8:1 , 2: 1, 3:0, 4:0, 10:1, 22:0, 6:1, 24:2, 25:0, 26:1, 9:1 }
+
 def ProcessToon(zone, realm, toon):
     global old_guilds
     global new_guilds
@@ -77,11 +79,16 @@ def ProcessToon(zone, realm, toon):
                     wf.rds.RecordRandomEnchant(data[slot+"_id"], data[slot+"_suffix"],  data[slot+"_seed"])
         if "guild" in data:
             data["guildRealm"] = data["guild"]["realm"]
-            data["guild"] = data["guild"]["name"]
-            if IsGuildKnown(zone, realm, data["guild"]):
+            if IsGuildKnown(zone, realm, data["guild"]["name"]):
                 old_guilds += 1
             else:
+                now = datetime.datetime.utcnow()
+                data["guild"]["lastUpdate"] = now
+                data["guild"]["region"] = zone
+                data["guild"]["side"] = race2side[data['race']]
+                wf.rds.LoadItem2Table(data["guild"], 'realmGuilds')
                 new_guilds += 1
+            data["guild"] = data["guild"]["name"]
         if ("talents" in data) and (len(data["talents"]) > 0) and ("spec" in data["talents"][0]):
             data["specName"] = data["talents"][0]["spec"]["name"]
         data["region"] = zone
@@ -113,6 +120,7 @@ def ProcessToons(zone, realm, toons):
 # Process-Toons.py US Uldaman  "Drollete" "Adelphus" "Impairment" "Tupperware" "Sabina" "Arandrie" "Soconfused" "Merryjayne" "Jenkillsguys" "Nojta" "
 
 wf.rds.AnalyzeTable('realmCharacter')
+wf.rds.AnalyzeTable('realmGuilds')
 try:
     zone = None
     realm = None

@@ -74,6 +74,12 @@ def ProcessGuild(zone, realm, guild):
             if IsToonKnown(zone, trealm, gtoon):
                 toons['old'] += 1
             else:
+                if "spec" in member['character']:
+                    member['character']["specName"] = member['character']['spec']['name']
+                now = datetime.datetime.utcnow()
+                member['character']["lastUpdate"] = now
+                member['character']["region"] = zone
+                wf.rds.LoadItem2Table(member['character'], 'realmCharacter')
                 toons['new'] += 1
         data["region"] = zone
         now = datetime.datetime.utcnow()
@@ -98,6 +104,7 @@ def ProcessGuilds(zone, realm, guilds):
 # "./Process-Guilds.py" "US" "Uldaman" "Two Percent" "THREE D"
 
 wf.rds.AnalyzeTable('realmGuilds')
+wf.rds.AnalyzeTable('realmCharacter')
 try:
     zone = None
     realm = None
