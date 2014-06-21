@@ -87,7 +87,6 @@ def ProcessToon(zone, realm, toon):
         data["region"] = zone
         now = datetime.datetime.utcnow()
         data["lastUpdate"] = now
-        print data
         wf.rds.LoadItem2Table(data, 'realmCharacter')
         toons_loaded += 1
     except (timeout.TimeoutError, IOError):
