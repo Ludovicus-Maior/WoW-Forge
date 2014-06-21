@@ -79,7 +79,7 @@ def ProcessToon(zone, realm, toon):
                     wf.rds.RecordRandomEnchant(data[slot+"_id"], data[slot+"_suffix"],  data[slot+"_seed"])
         if "guild" in data:
             data["guildRealm"] = data["guild"]["realm"]
-            if IsGuildKnown(zone, realm, data["guild"]["name"]):
+            if IsGuildKnown(zone, data["guild"]["realm"], data["guild"]["name"]):
                 old_guilds += 1
             else:
                 now = datetime.datetime.utcnow()
