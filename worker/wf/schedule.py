@@ -27,7 +27,7 @@ def Complete_AH(region, realm):
 def Schedule_Toons(region, realm, toons):
 
     rr = ["Process-Toons.py", region, realm, ]
-    rr.extend(toons)
+    rr.extend(sorted(toons))
     wf.logger.logger.info("Enqueue %s" % json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
@@ -36,7 +36,7 @@ def Schedule_Toons(region, realm, toons):
 def Schedule_Guilds(region, realm, guilds):
 
     rr = ["Process-Guilds.py", region, realm, ]
-    rr.extend(guilds)
+    rr.extend(sorted(guilds))
     wf.logger.logger.info("Enqueue %s" % json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
