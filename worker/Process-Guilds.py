@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import sys
 import timeout
@@ -74,6 +75,8 @@ def ProcessGuild(zone, realm, guild):
             else:
                 toons['new'] += 1
         data["region"] = zone
+        now = datetime.datetime.utcnow()
+        data["lastUpdate"] = now
         wf.rds.LoadItem2Table(data, 'realmGuilds')
     except (timeout.TimeoutError, IOError):
         wf.logger.logger.exception("Continue after ProcessGuild(url=%s)" % url)

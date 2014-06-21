@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import sys
 import timeout
@@ -84,13 +85,15 @@ def ProcessToon(zone, realm, toon):
         if ("talents" in data) and (len(data["talents"]) > 0) and ("spec" in data["talents"][0]):
             data["specName"] = data["talents"][0]["spec"]["name"]
         data["region"] = zone
+        now = datetime.datetime.utcnow()
+        data["lastUpdate"] = now
+        print data
         wf.rds.LoadItem2Table(data, 'realmCharacter')
         toons_loaded += 1
     except (timeout.TimeoutError, IOError):
         wf.logger.logger.exception("Continue after ProcessToon(url=%s)" % url)
     except KeyError, e:
         wf.logger.logger.warning(e.message)
-    finally:
 
 
 
