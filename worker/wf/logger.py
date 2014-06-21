@@ -3,7 +3,8 @@ import logging.handlers
 import os
 import sys
 
-if sys.argv[0] and os.path.splitext(sys.argv[0]) == "py":
+
+if sys.argv[0] and os.path.splitext(sys.argv[0])[1] == ".py":
     s = os.path.split(sys.argv[0])
     logger = logging.getLogger(s[1])
 else:

@@ -10,6 +10,7 @@ from urlparse import urlparse
 import wf.logger
 import wf.rds
 import wf.schedule
+import wf.util
 
 # {u'rand': 0, u'auc': 110488118, u'timeLeft': u'VERY_LONG', u'bid': 455000, u'item': 30282, u'seed': 65752064,
 # u'ownerRealm': u'Ravencrest', u'owner': u'Skaramoush', u'buyout': 470000, u'quantity': 1}
@@ -158,9 +159,7 @@ def ScanAuctionHouse(zone, realm):
     url = data['files'][0]['url']
     AH = GetAuctionData(url)
 
-    if wf.util.IsLimitExceeded(AH):
-        wf.logger.logger.error("Daily limit exceeded, exiting.")
-        exit(2)
+    wf.util.IsLimitExceeded(AH)  # Throws exception if limit exceeded
     # Process the AH data, generating new work and updating items along the way...
     ProcessAuctions(zone, slug, 'alliance', AH['alliance']['auctions'])
     wf.schedule.Schedule_AH(zone, None)
@@ -203,6 +202,10 @@ try:
     else:
         zone = 'US'
         ScanAuctionHouses(zone)
+except wf.util.LimitExceededError:
+    wf.logger.logger.error("Daily limit exceeded, exiting.")
+    wf.schedule.Schedule_AH(zone, realms)
+    wf.util.Seppuku("Limit Exceeded")
 except:
     wf.logger.logger.exception("Exception while calling ScanAuctionHouses(%s,%s)" % (zone, realms))
     exit(1)

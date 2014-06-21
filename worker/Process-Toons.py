@@ -7,6 +7,7 @@ import urllib
 import wf.logger
 import wf.rds
 import wf.schedule
+import wf.util
 
 
 guilds = None
@@ -46,16 +47,19 @@ def FlushGuilds():
 def GetToon(url):
     return json.load(urllib.urlopen(url))
 
-
+old_guilds = 0
+new_guilds = 0
+toons_loaded = 0
 def ProcessToon(zone, realm, toon):
+    global old_guilds
+    global new_guilds
+    global toons_loaded
     try:
         slug = wf.rds.Realm2Slug(zone, realm)
         url = "//%s.battle.net/api/wow/character/%s/%s" % (zone, slug, toon)
         url = 'http:'+urllib.quote(url.encode('utf-8'))+'?fields=guild,items,talents'
         data = GetToon(url)
-        if wf.util.IsLimitExceeded(data):
-            wf.logger.logger.error("Daily limit exceeded, exiting.")
-            exit(2)
+        wf.util.IsLimitExceeded(data)
         if not 'items' in data:
             raise KeyError("Unable to locate toon [%s] in %s/%s" % (toon, realm, zone))
         for slot in data['items']:
@@ -73,22 +77,32 @@ def ProcessToon(zone, realm, toon):
         if "guild" in data:
             data["guildRealm"] = data["guild"]["realm"]
             data["guild"] = data["guild"]["name"]
-            IsGuildKnown(zone, realm, data["guild"])
+            if IsGuildKnown(zone, realm, data["guild"]):
+                old_guilds += 1
+            else:
+                new_guilds += 1
         if ("talents" in data) and (len(data["talents"]) > 0) and ("spec" in data["talents"][0]):
             data["specName"] = data["talents"][0]["spec"]["name"]
         data["region"] = zone
         wf.rds.LoadItem2Table(data, 'realmCharacter')
+        toons_loaded += 1
     except (timeout.TimeoutError, IOError):
         wf.logger.logger.exception("Continue after ProcessToon(url=%s)" % url)
     except KeyError, e:
         wf.logger.logger.warning(e.message)
+    finally:
 
 
 
 def ProcessToons(zone, realm, toons):
+    global old_guilds
+    global new_guilds
+    global toons_loaded
     wf.logger.logger.info("ProcessToons(%s, %s, %s)" % (zone, realm, toons))
     for toon in toons:
         ProcessToon(zone, realm, unicode(toon, encoding='utf-8'))
+    wf.logger.logger.info("Toons listed:%d, loaded:%d" % (len(toons), toons_loaded))
+    wf.logger.logger.info("Guilds new:%d, old:%d" % (new_guilds, old_guilds))
     wf.rds.FlushRandomEnchant()
     FlushGuilds()
 
@@ -108,6 +122,11 @@ try:
         ProcessToons(zone, realm, toons)
     else:
         wf.logger.logger.error("Not enough arguments to %s" % sys.argv[0])
+except wf.util.LimitExceededError:
+    wf.logger.logger.error("Daily limit exceeded, exiting.")
+    wf.schedule.Schedule_Toons(zone, realm, toons)
+    FlushGuilds()
+    wf.util.Seppuku("Limit Exceeded")
 except StandardError:
     wf.logger.logger.exception("Caught exception in %s" % sys.argv[0])
     exit(1)

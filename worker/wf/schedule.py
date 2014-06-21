@@ -16,7 +16,7 @@ def Schedule_AH(region, realms=None):
             return
     rr = ["Process-AH.py", region]
     rr.extend(realms)
-    wf.logger.logger.info(json.dumps(rr))
+    wf.logger.logger.info("Enqueue %s" % json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
         wf.sqs.PutSeq(q, rr)
@@ -28,7 +28,7 @@ def Schedule_Toons(region, realm, toons):
 
     rr = ["Process-Toons.py", region, realm, ]
     rr.extend(toons)
-    wf.logger.logger.info(json.dumps(rr))
+    wf.logger.logger.info("Enqueue %s" % json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
         wf.sqs.PutSeq(q, rr)
@@ -37,7 +37,7 @@ def Schedule_Guilds(region, realm, guilds):
 
     rr = ["Process-Guilds.py", region, realm, ]
     rr.extend(guilds)
-    wf.logger.logger.info(json.dumps(rr))
+    wf.logger.logger.info("Enqueue %s" % json.dumps(rr))
     if "WF_SQS_REGION" in os.environ:
         q = wf.sqs.ConnectSQS(region=os.environ["WF_SQS_REGION"], queue=os.environ["WF_SQS_QUEUE"])
         wf.sqs.PutSeq(q, rr)

@@ -51,6 +51,10 @@ def GetGuild(url):
 
 
 def ProcessGuild(zone, realm, guild):
+    toons={}
+    toons['new'] = 0
+    toons['underage'] = 0
+    toons['old'] = 0
     try:
         slug = wf.rds.Realm2Slug(zone, realm)
         url = "//%s.battle.net/api/wow/guild/%s/%s" % (zone, slug, guild)
@@ -61,17 +65,22 @@ def ProcessGuild(zone, realm, guild):
             exit(2)
         for member in data['members']:
             if member['character']['level'] < 11:
+                toons['underage'] += 1
                 continue
             gtoon = member['character']['name']
             trealm = member['character']['realm']
-            IsToonKnown(zone, trealm, gtoon)
+            if IsToonKnown(zone, trealm, gtoon):
+                toons['old'] += 1
+            else:
+                toons['new'] += 1
         data["region"] = zone
         wf.rds.LoadItem2Table(data, 'realmGuilds')
     except (timeout.TimeoutError, IOError):
         wf.logger.logger.exception("Continue after ProcessGuild(url=%s)" % url)
     except KeyError, e:
         wf.logger.logger.error(e.message)
-
+    finally:
+         wf.logger.logger.info("Processed guild %s|%s, New=%d, Old=%d, Underage=%d" % (guild, realm, toons['new'], toons['underage'], toons['old']))
 
 
 def ProcessGuilds(zone, realm, guilds):
@@ -96,6 +105,11 @@ try:
         ProcessGuilds(zone, realm, guilds)
     else:
         wf.logger.logger.error("Not enough arguments to %s" % sys.argv[0])
+except wf.util.LimitExceededError:
+    wf.logger.logger.error("Daily limit exceeded, exiting.")
+    wf.schedule.Schedule_Guilds(zone, realm, guilds)
+    FlushToons()
+    wf.util.Seppuku("Limit Exceeded")
 except StandardError:
     wf.logger.logger.exception("Caught exception in %s" % sys.argv[0])
     exit(1)
