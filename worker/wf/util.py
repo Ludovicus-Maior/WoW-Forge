@@ -3,6 +3,7 @@
 import wf.logger
 
 import boto
+import boto.ec2
 import requests
 import subprocess
 import time
@@ -40,7 +41,7 @@ def Seppuku(why):
 
 
     # Now commit Seppuku
-    ec2_conn = boto.connect_ec2("us-west-1")
+    ec2_conn = boto.ec2.connect_to_region("us-west-1")
     # this can throw an exception.  Protect later.
     ec2_conn.terminate_instances(instance_ids=[instance_id])
     time.sleep(60*5)
