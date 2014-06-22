@@ -40,12 +40,13 @@ def Seppuku(why):
 
 
     # Now commit Seppuku
-    ec2_conn = boto.connect_ec2()
+    ec2_conn = boto.connect_ec2("us-west-1")
+    # this can throw an exception.  Protect later.
     ec2_conn.terminate_instances(instance_ids=[instance_id])
     time.sleep(60*5)
 
     # What!  No sleep?  Then halt
-    subprocess.check_call(["sudo","halt"])
+    subprocess.check_call(["sudo", "halt"])
     time.sleep(60*5)
     exit(9)
 
