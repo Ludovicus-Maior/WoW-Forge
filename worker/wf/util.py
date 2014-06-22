@@ -7,6 +7,7 @@ import requests
 import subprocess
 import time
 
+from boto.s3.key import Key
 
 class LimitExceededError(StandardError):
     pass
@@ -32,7 +33,8 @@ def Seppuku(why):
     # Save a copy of the latest syslog to S3
     s3_conn = boto.connect_s3()
     bucket = s3_conn.get_bucket('wf-instance-logs')
-    key = bucket.Key("%s.txt" % instance_id)
+    key = Key(bucket)
+    key.key = "%s.txt" % instance_id
     wf.logger.logger.error("Seppuku(%s): copying log to %s" % (instance_id, key.generate_url(0)))
     key.set_contents_from_filename('/var/log/syslog')
 
