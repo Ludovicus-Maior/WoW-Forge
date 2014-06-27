@@ -22,7 +22,7 @@ def ConnectDatabase(auto_commit):
         wf.logger.logger.exception("Missing environment variable setup for WF_RDS_*")
         raise
 
-    database = MySQLdb.connect(user=db_user, passwd=db_pass, host=db_host, db="Warcraft", use_unicode=True)
+    database = MySQLdb.connect(user=db_user, passwd=db_pass, host=db_host, db="Warcraft", charset='utf8', use_unicode=True)
     database.autocommit(auto_commit)
 
 TableFields = {}
