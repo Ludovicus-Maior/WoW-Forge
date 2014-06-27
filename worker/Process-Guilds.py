@@ -65,6 +65,8 @@ def ProcessGuild(zone, realm, guild):
         if wf.util.IsLimitExceeded(data):
             wf.logger.logger.error("Daily limit exceeded, exiting.")
             exit(2)
+        if not 'members' in data:
+            raise KeyError("Expected members in data: %s" % data)
         for member in data['members']:
             if member['character']['level'] < 11:
                 toons['underage'] += 1
@@ -79,7 +81,11 @@ def ProcessGuild(zone, realm, guild):
                 now = datetime.datetime.utcnow()
                 member['character']["lastUpdate"] = now
                 member['character']["region"] = zone
-                wf.rds.LoadItem2Table(member['character'], 'realmCharacter')
+                try:
+                    wf.rds.LoadItem2Table(member['character'], 'realmCharacter')
+                except Exception:
+                    wf.logger.logger.debug("Error storing toon: %s" % member['character'])
+                    raise
                 toons['new'] += 1
         data["region"] = zone
         now = datetime.datetime.utcnow()
@@ -90,7 +96,7 @@ def ProcessGuild(zone, realm, guild):
     except KeyError, e:
         wf.logger.logger.error(e.message)
     finally:
-         wf.logger.logger.info("Processed guild %s|%s, New=%d, Underage=%d, Old=%d" % (guild, realm, toons['new'], toons['underage'], toons['old']))
+        wf.logger.logger.info("Processed guild %s|%s, New=%d, Underage=%d, Old=%d" % (guild, realm, toons['new'], toons['underage'], toons['old']))
 
 
 def ProcessGuilds(zone, realm, guilds):
@@ -105,6 +111,7 @@ def ProcessGuilds(zone, realm, guilds):
 
 wf.rds.AnalyzeTable('realmGuilds')
 wf.rds.AnalyzeTable('realmCharacter')
+
 try:
     zone = None
     realm = None
