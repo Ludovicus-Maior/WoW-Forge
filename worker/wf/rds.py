@@ -105,8 +105,10 @@ def FinishedRealm(region, realm):
 
     now = datetime.datetime.utcnow()
     c = database.cursor()
-    c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
+    rows_done = c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
               (now.isoformat(' '), realm, region))
+    if rows_done != 1:
+        wf.logger.logger.warning("FinishedRealm(%s,$s): failed to update realm." % (region, realm))
     c.close()
     return realm
 
