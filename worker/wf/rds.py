@@ -97,6 +97,27 @@ def SelectStaleRealm(region):
     c.close()
     return realm
 
+def SelectStaleRealms(region):
+    global database
+    if not database:
+        ConnectDatabase(True)
+
+    c = database.cursor()
+    c.execute("""SELECT `name`, `lastAuctionScan` FROM `realmStatus` WHERE `region` = %s AND `enqueueTime` IS NULL ORDER BY `lastAuctionScan`;""" ,
+              (region,))
+    d = c.fetchone()
+    realms_ts = {}
+    realms = list()
+    while d is not None:
+        realms_ts[d[0]] = d[1]
+        realms.append(d[0])
+        d = c.fetchone()
+    now = datetime.datetime.utcnow()
+    s = """UPDATE `realmStatus` SET `enqueueTime` = '%s' WHERE `enqueueTime` IS NULL and `name` = %%s and  `region` = '%s';""" % (now.isoformat(' '), region)
+    c.executemany(s % realms )
+    c.close()
+    return realms_ts
+
 
 def FinishedRealm(region, realm):
     global database
