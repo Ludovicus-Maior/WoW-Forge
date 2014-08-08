@@ -119,7 +119,7 @@ def SelectStaleRealms(region):
     return realms_ts
 
 
-def FinishedRealm(region, realm):
+def FinishedRealm(region, realm, lastModified):
     global database
     if not database:
         ConnectDatabase(True)
