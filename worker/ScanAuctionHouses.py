@@ -32,7 +32,7 @@ def ScanAuctionHouses(zone):
     while True:
         then = time.time()
         realms = wf.rds.SelectRegionRealms(zone)
-        wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, realms_notupdated))
+        wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, len(realms)))
         oldest_realm_date = None
         for realm in realms:
             if not ScanAuctionHouse(zone, realm, realms[realm]):
