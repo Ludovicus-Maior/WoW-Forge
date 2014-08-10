@@ -56,7 +56,7 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
         headers["Accept-encoding"] = 'gzip'
     response = http.request('GET', url, headers=headers, preload_content=False)
     if modified_since and response.status == 304:
-        wf.logger.logger.info("Status 304, no new data since %s" % modified_since)
+        # wf.logger.logger.info("Status 304, no new data since %s" % modified_since)
         return None
     if response.status == 200:
         # Happiness
@@ -99,7 +99,7 @@ def get_auctions(zone, realm, lastScanned):
     data = request("http://%s.battle.net/api/wow/auction/data/%s" % (zone, slug),  modified_since=modified_since)
     if data is None and lastScanned:
         # No new data
-        wf.logger.logger.info("No new data from %s realm %s since %s." % (zone, realm, lastScanned))
+        # wf.logger.logger.info("No new data from %s realm %s since %s." % (zone, realm, lastScanned))
         return None
     url = data['files'][0]['url']
     lm = data['files'][0]['lastModified']

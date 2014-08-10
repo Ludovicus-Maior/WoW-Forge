@@ -15,9 +15,12 @@ NO_UPDATE_NAP = 20
 def ScanAuctionHouse(zone, realm, lastScanned):
     realm_date = wf.bnet.iso_date(lastScanned)
     utc_now = datetime.datetime.utcnow()
-    if (utc_now-realm_date).total_seconds() < (58*60):
-        wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
+    how_stale = utc_now-realm_date).total_seconds()
+    if (how_stale < (58*60):
+        # wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
         return None
+    if (how_stale > (2*60*60)):
+        wf.logger.logger.warning("ScanAuctionHouse(%s,%s): Realm is STALE (%s)" % (zone, realm, lastScanned))
     then = time.time()
     result = wf.bnet.get_auctions(zone, realm, lastScanned)
     if result:
