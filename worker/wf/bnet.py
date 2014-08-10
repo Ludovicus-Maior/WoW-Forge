@@ -22,10 +22,10 @@ http = PoolManager(10,
                    timeout=urllib3.util.Timeout(connect=5, read=1),
                    retries=Retry(total=50, connect=3, read=3, redirect=3, backoff_factor=1))
 
-httplib.HTTPConnection.debuglevel = 1
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
+# httplib.HTTPConnection.debuglevel = 1
+# requests_log = logging.getLogger("requests.packages.urllib3")
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
 
 class BNetError(StandardError):
     def __init__(self, url, response):
@@ -36,10 +36,13 @@ class BNetError(StandardError):
     def __str__(self):
         return "<BNetError url=%s, status=%s, msg=%s>" % (self.url, self.status, self.msg)
 
+def iso_date(iso_date):
+    return datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S")
+
 # Sat, 09 Aug 2014 17:06:27 GMT
 def http_date(iso_date):
     if isinstance(iso_date, types.StringTypes):
-        iso_date = datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S.%f")
+        iso_date = datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S")
     return iso_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
 
@@ -95,7 +98,6 @@ def get_auctions(zone, realm, lastScanned):
     if data is None and lastScanned:
         # No new data
         wf.logger.logger.info("No new data from %s realm %s since %s." % (zone, realm, lastScanned))
-        wf.rds.FinishedRealm(zone, realm, lastScanned)
         return None
     url = data['files'][0]['url']
     lm = data['files'][0]['lastModified']

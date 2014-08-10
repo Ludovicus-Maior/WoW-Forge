@@ -121,12 +121,16 @@ def FinishedRealm(region, realm, lastModified):
     if not database:
         ConnectDatabase(True)
 
-    now = datetime.datetime.utcnow()
     c = database.cursor()
     rows_done = c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
               (lastModified, realm, region))
     if rows_done != 1:
-        wf.logger.logger.warning("FinishedRealm(%s,%s): failed to update realm." % (region, realm))
+        if rows_done < 0:
+            wf.logger.logger.warning("FinishedRealm(%s,%s): failed to update realm to %s." % (region, realm, lastModified))
+            wf.logger.logger.warning("MySQL: %s" % c.messages)
+        else:
+            wf.logger.logger.warning("FinishedRealm(%s,%s): redundant update realm to %s." % (region, realm, lastModified))
+            wf.logger.logger.warning("MySQL: %s" % c.messages)
     else:
         wf.logger.logger.info("FinishedRealm(%s,%s): updated realm on %s." % (region, realm, lastModified))
     c.close()

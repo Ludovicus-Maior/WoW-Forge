@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import time
 import sys
 import wf.bnet
@@ -12,6 +13,11 @@ import wf.util
 
 
 def ScanAuctionHouse(zone, realm, lastScanned):
+    realm_date = wf.bnet.iso_date(lastScanned)
+    utc_now = datetime.datetime.utcnow()
+    if (utc_now-realm_date).total_seconds() < (45*60):
+        wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
+        return None
     then = time.time()
     result = wf.bnet.get_auctions(zone, realm, lastScanned)
     if result:
@@ -22,20 +28,26 @@ def ScanAuctionHouse(zone, realm, lastScanned):
     return result
 
 
-def ScanAuctionHouses(zone, realms=None):
+def ScanAuctionHouses(zone):
     while True:
-        wf.logger.logger.info("ScanAuctionHouses(%s, %s)" % (zone, realms))
-        if realms is None:
-            realms = wf.rds.SelectRegionRealms(zone)
-        realms_notupdated = len(realms)
+        then = time.time()
+        realms = wf.rds.SelectRegionRealms(zone)
+        wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, realms_notupdated))
+        oldest_realm_date = None
         for realm in realms:
             if not ScanAuctionHouse(zone, realm, realms[realm]):
-                realms_notupdated -= 1
-            time.sleep(1.0)
-        wf.logger.logger.info("ScanAuctionHouses() Scan complete. %d realms not updated. Napping till the next run" % realms_notupdated)
-        time.sleep(1.0 * realms_notupdated)
-
-
+                realm_date = wf.bnet.iso_date(realms[realm])
+                if oldest_realm_date is None or realm_date < oldest_realm_date:
+                    oldest_realm_date = realm_date
+        now = time.time()
+        wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
+        utc_now = datetime.datetime.utcnow()
+        # Let us poll starting at 10 minutes till the hour
+        oldest_realm_date = oldest_realm_date + datetime.timedelta(minutes=50)
+        nap_delta = (oldest_realm_date - utc_now).total_seconds()
+        if nap_delta > 0:
+            wf.logger.logger.info("ScanAuctionHouses() Napping till %s" % oldest_realm_date)
+            time.sleep(nap_delta)
 
 try:
     zone = None
