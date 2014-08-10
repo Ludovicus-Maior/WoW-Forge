@@ -19,15 +19,21 @@ def ScanAuctionHouse(zone, realm, lastScanned):
         wf.s3.save_ah_file(result[0], zone, realm, result[1])
     now = time.time()
     wf.logger.logger.info("Processed data from %s realm %s in %g seconds." % (zone, realm, now - then))
+    return result
 
 
 def ScanAuctionHouses(zone, realms=None):
-    wf.logger.logger.info("ScanAuctionHouses(%s, %s)" % (zone, realms))
-    if realms is None:
-        realms = wf.rds.SelectStaleRealms(zone)
-    for realm in realms:
-        ScanAuctionHouse(zone, realm, realms[realm])
-        time.sleep(1.0)
+    while True:
+        wf.logger.logger.info("ScanAuctionHouses(%s, %s)" % (zone, realms))
+        if realms is None:
+            realms = wf.rds.SelectRegionRealms(zone)
+        realms_notupdated = len(realms)
+        for realm in realms:
+            if not ScanAuctionHouse(zone, realm, realms[realm]):
+                realms_notupdated -= 1
+            time.sleep(1.0)
+        wf.logger.logger.info("ScanAuctionHouses() Scan complete. %d realms not updated. Napping till the next run" % realms_notupdated)
+        time.sleep(1.0 * realms_notupdated)
 
 
 
