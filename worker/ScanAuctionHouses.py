@@ -15,7 +15,7 @@ import wf.util
 def ScanAuctionHouse(zone, realm, lastScanned):
     realm_date = wf.bnet.iso_date(lastScanned)
     utc_now = datetime.datetime.utcnow()
-    if (utc_now-realm_date).total_seconds() < (45*60):
+    if (utc_now-realm_date).total_seconds() < (50*60):
         wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
         return None
     then = time.time()
@@ -32,6 +32,7 @@ def ScanAuctionHouses(zone):
     while True:
         then = time.time()
         realms = wf.rds.SelectRegionRealms(zone)
+        wf.logger.logger.info("!"*80)
         wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, len(realms)))
         oldest_realm_date = None
         for realm in realms:
@@ -42,12 +43,15 @@ def ScanAuctionHouses(zone):
         now = time.time()
         wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
         utc_now = datetime.datetime.utcnow()
-        # Let us poll starting at 10 minutes till the hour
-        oldest_realm_date = oldest_realm_date + datetime.timedelta(minutes=50)
+        # Let us poll starting at 2 minutes till the hour
+        oldest_realm_date = oldest_realm_date + datetime.timedelta(minutes=58)
         nap_delta = (oldest_realm_date - utc_now).total_seconds()
         if nap_delta > 0:
             wf.logger.logger.info("ScanAuctionHouses() Napping till %s" % oldest_realm_date)
             time.sleep(nap_delta)
+        else:
+            wf.logger.logger.info("ScanAuctionHouses() No rest for the wicked.  %s is too close." % oldest_realm_date)
+        wf.logger.logger.info("!"*80)
 
 try:
     zone = None
