@@ -11,7 +11,7 @@ def save_ah_file(local_file, zone, realm, timestamp):
     bucket = s3_conn.get_bucket('wf-ah-data')
     key = Key(bucket)
     key.key = "%s/%s/%s.json" % (zone, realm, timestamp)
-    wf.logger.logger.info("copying %s to %s" % (local_file, key.generate_url(0)))
+    wf.logger.logger.info("copying %s to %s" % (local_file, key.key))
     key.set_contents_from_filename(local_file)
     os.unlink(local_file)
 
