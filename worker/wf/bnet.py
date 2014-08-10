@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 
+import datetime
 import httplib
 import json
 import logging
 import os
 import tempfile
+import time
+import types
 import urllib3
 import urllib3.util
 import urllib3.util.request
 import wf.logger
 import wf.rds
+import wf.util
 from urllib3 import PoolManager, Retry
 
 
@@ -32,7 +36,14 @@ class BNetError(StandardError):
     def __str__(self):
         return "<BNetError url=%s, status=%s, msg=%s>" % (self.url, self.status, self.msg)
 
-def request(url, return_file=False, allow_compression=False, modified_since=None):
+# Sat, 09 Aug 2014 17:06:27 GMT
+def http_date(iso_date):
+    if isinstance(iso_date, types.StringTypes):
+        iso_date = datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S.%f")
+    return iso_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+
+def request(url, return_file=False, allow_compression=False, modified_since=None, retry404=None):
     headers = {}
     if modified_since:
         headers["If-Modified-Since"] = modified_since
@@ -45,8 +56,8 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
     if response.status == 200:
         # Happiness
         if return_file:
-            (ohandle, path) = tempfile.mkstemp()
-            handle = os.fdopen(ohandle, "w")
+            (temp_handle, path) = tempfile.mkstemp()
+            handle = os.fdopen(temp_handle, "w")
             wf.logger.logger.info("Status 200, saving to %s" % path)
             while True:
                 data = response.read(64*1024, decode_content=True)
@@ -66,13 +77,21 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
     if response.status == 500:
         data = response.read()
         wf.util.IsLimitExceeded(data)
+    if response.status == 404 and retry404 and retry404 > 0:
+        wf.logger.logger.info("URL %s not found, retry up to %d times" % (url, retry404))
+        time.sleep(1.0)
+        return request(url, return_file, allow_compression, modified_since, retry404 - 1)
     raise BNetError(url, response)
 
 
 def get_auctions(zone, realm, lastScanned):
-    wf.logger.logger.info("Checking data for %s realm [%s]" % (zone, realm))
+    wf.logger.logger.info("Checking AH data for %s realm [%s] last checked %s" % (zone, realm, lastScanned))
     slug = wf.rds.Realm2Slug(zone, realm)
-    data = request("http://%s.battle.net/api/wow/auction/data/%s" % (zone, slug),  modified_since=lastScanned)
+    if lastScanned:
+        modified_since = http_date(lastScanned)
+    else:
+        modified_since = None
+    data = request("http://%s.battle.net/api/wow/auction/data/%s" % (zone, slug),  modified_since=modified_since)
     if data is None and lastScanned:
         # No new data
         wf.logger.logger.info("No new data from %s realm %s since %s." % (zone, realm, lastScanned))
@@ -80,6 +99,11 @@ def get_auctions(zone, realm, lastScanned):
         return None
     url = data['files'][0]['url']
     lm = data['files'][0]['lastModified']
-    path = request(url, return_file=True, allow_compression=True)
-    wf.rds.FinishedRealm(zone, realm, lm)
-    return path
+    try:
+        path = request(url, return_file=True, allow_compression=True, retry404=4)
+    except BNetError:
+        wf.logger.logger.exception("get_auctions()")
+        wf.rds.FinishedRealm(zone, realm, lastScanned)
+        return None
+    wf.rds.FinishedRealm(zone, realm, datetime.datetime.utcfromtimestamp(lm/1000).isoformat(" "))
+    return (path, (lm/1000))

@@ -114,7 +114,7 @@ def SelectStaleRealms(region):
         d = c.fetchone()
     now = datetime.datetime.utcnow()
     s = """UPDATE `realmStatus` SET `enqueueTime` = '%s' WHERE `enqueueTime` IS NULL and `name` = %%s and  `region` = '%s';""" % (now.isoformat(' '), region)
-    c.executemany(s % realms )
+    c.executemany(s, realms )
     c.close()
     return realms_ts
 
@@ -127,9 +127,11 @@ def FinishedRealm(region, realm, lastModified):
     now = datetime.datetime.utcnow()
     c = database.cursor()
     rows_done = c.execute("""UPDATE `realmStatus` SET `enqueueTime` = NULL,  `lastAuctionScan` = %s WHERE `name` = %s and  `region` = %s;""",
-              (now.isoformat(' '), realm, region))
+              (lastModified, realm, region))
     if rows_done != 1:
-        wf.logger.logger.warning("FinishedRealm(%s,$s): failed to update realm." % (region, realm))
+        wf.logger.logger.warning("FinishedRealm(%s,%s): failed to update realm." % (region, realm))
+    else:
+        wf.logger.logger.info("FinishedRealm(%s,%s): updated realm on %s." % (region, realm, lastModified))
     c.close()
     return realm
 
