@@ -36,14 +36,16 @@ class BNetError(StandardError):
     def __str__(self):
         return "<BNetError url=%s, status=%s, msg=%s>" % (self.url, self.status, self.msg)
 
-def iso_date(iso_date):
-    return datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S")
+def iso_date(in_date):
+    if isinstance(in_date, types.StringTypes):
+        return datetime.datetime.strptime(in_date, "%Y-%m-%d %H:%M:%S")
+    return in_date
 
 # Sat, 09 Aug 2014 17:06:27 GMT
-def http_date(iso_date):
-    if isinstance(iso_date, types.StringTypes):
-        iso_date = datetime.datetime.strptime(iso_date, "%Y-%m-%d %H:%M:%S")
-    return iso_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+def http_date(in_date):
+    if isinstance(in_date, types.StringTypes):
+        in_date = datetime.datetime.strptime(in_date, "%Y-%m-%d %H:%M:%S")
+    return in_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
 
 def request(url, return_file=False, allow_compression=False, modified_since=None, retry404=None):
