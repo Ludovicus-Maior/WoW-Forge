@@ -57,7 +57,7 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
     response = http.request('GET', url, headers=headers, preload_content=False)
     if modified_since and response.status == 304:
         # wf.logger.logger.info("Status 304, no new data since %s" % modified_since)
-        return False
+        return None
     if response.status == 200:
         # Happiness
         if return_file:

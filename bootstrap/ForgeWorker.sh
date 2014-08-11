@@ -42,6 +42,7 @@ pip install boto --upgrade
 pip install mysql-python
 pip install fuzzy
 pip install requests
+pip install urllib==1.9
 
 # Set the HOSTNAME
 export HOSTNAME=$(wget -qO- http://169.254.169.254/latest/meta-data/public-hostname)

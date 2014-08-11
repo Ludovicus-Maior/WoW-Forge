@@ -62,7 +62,8 @@ def ScanAuctionHouses(zone):
         wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
         if not someone_updated:
             now = datetime.datetime.utcnow()
-            nap_time = ComputeTemporalPhase() + 10 - (now.second + now.microsecond/1e6) % 60
+            wf.logger.logger.info("ScanAuctionHouses() TP=%f " % ComputeTemporalPhase())
+            nap_time = (ComputeTemporalPhase() + 10 - (now.second + now.microsecond/1e6)) % 60
             wf.logger.logger.info("ScanAuctionHouses() No updates occurred.  Enforced nap of %f seconds" % nap_time)
             time.sleep(nap_time)
         utc_now = datetime.datetime.utcnow()
