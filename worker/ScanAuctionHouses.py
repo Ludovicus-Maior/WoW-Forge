@@ -10,16 +10,25 @@ import wf.schedule
 import wf.s3
 import wf.util
 
-NO_UPDATE_NAP = 20
+temporal_phase = []
+def ClearTemporalPhase():
+    global temporal_phase
+    temporal_phase = []
+
+def RecordTemporalPhase(ts):
+    temporal_phase.append(ts.second)
+
+def ComputeTemporalPhase():
+    return float(sum(temporal_phase))/len(temporal_phase)
 
 def ScanAuctionHouse(zone, realm, lastScanned):
     realm_date = wf.bnet.iso_date(lastScanned)
     utc_now = datetime.datetime.utcnow()
-    how_stale = utc_now-realm_date).total_seconds()
-    if (how_stale < (58*60):
+    how_stale = (utc_now-realm_date).total_seconds()
+    if how_stale < (58*60):
         # wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
         return None
-    if (how_stale > (2*60*60)):
+    if how_stale > (2*60*60):
         wf.logger.logger.warning("ScanAuctionHouse(%s,%s): Realm is STALE (%s)" % (zone, realm, lastScanned))
     then = time.time()
     result = wf.bnet.get_auctions(zone, realm, lastScanned)
@@ -40,9 +49,11 @@ def ScanAuctionHouses(zone):
         wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, len(realms)))
         oldest_realm_date = None
         someone_updated = False
+        ClearTemporalPhase()
         for realm in realms:
             if not ScanAuctionHouse(zone, realm, realms[realm]):
                 realm_date = wf.bnet.iso_date(realms[realm])
+                RecordTemporalPhase(realm_date)
                 if oldest_realm_date is None or realm_date < oldest_realm_date:
                     oldest_realm_date = realm_date
             else:
@@ -50,8 +61,10 @@ def ScanAuctionHouses(zone):
         now = time.time()
         wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
         if not someone_updated:
-            wf.logger.logger.info("ScanAuctionHouses() No updates occurred.  Enforced nap of %d seconds" % NO_UPDATE_NAP)
-            time.sleep(NO_UPDATE_NAP)
+            now = datetime.datetime.utcnow()
+            nap_time = ComputeTemporalPhase() + 10 - (now.second + now.microsecond/1e6) % 60
+            wf.logger.logger.info("ScanAuctionHouses() No updates occurred.  Enforced nap of %f seconds" % nap_time)
+            time.sleep(nap_time)
         utc_now = datetime.datetime.utcnow()
         # Let us poll starting at 2 minutes till the hour
         oldest_realm_date = oldest_realm_date + datetime.timedelta(minutes=59)
