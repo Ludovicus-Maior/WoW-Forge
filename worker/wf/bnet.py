@@ -57,7 +57,7 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
     response = http.request('GET', url, headers=headers, preload_content=False)
     if modified_since and response.status == 304:
         # wf.logger.logger.info("Status 304, no new data since %s" % modified_since)
-        return None
+        return False
     if response.status == 200:
         # Happiness
         if return_file:
@@ -65,7 +65,16 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
             handle = os.fdopen(temp_handle, "w")
             wf.logger.logger.info("Status 200, saving to %s" % path)
             while True:
-                data = response.read(64*1024, decode_content=True)
+                try:
+                    data = response.read(64*1024, decode_content=True)
+                except urllib3.exceptions.HTTPError:
+                    if retry404 and retry404 > 0:
+                        wf.logger.logger.exception("Error while reading %s, retry up to %d times" % (url, retry404))
+                        time.sleep(1.0)
+                        return request(url, return_file, allow_compression, modified_since, retry404 - 1)
+                    else:
+                        wf.logger.logger.exception("Error while reading %s. Punting" % (url,))
+                        return None
                 if data is None or data is '':
                         break
                 handle.write(data)
