@@ -81,7 +81,16 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
             handle.close()
             response.release_conn()
             return path
-        data = response.data
+        try:
+            data = response.data
+        except urllib3.exceptions.HTTPError:
+            if retry404 and retry404 > 0:
+                wf.logger.logger.exception("Error while reading %s, retry up to %d times" % (url, retry404))
+                time.sleep(1.0)
+                return request(url, return_file, allow_compression, modified_since, retry404 - 1)
+            else:
+                wf.logger.logger.exception("Error while reading %s. Punting" % (url,))
+                return None
         wf.logger.logger.info("Status 200,  content [%s]" % data)
         response.release_conn()
         c_type = response.headers.get('content-type', '')
