@@ -62,19 +62,12 @@ def ScanAuctionHouses(zone):
         wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
         if not someone_updated:
             now = datetime.datetime.utcnow()
-            wf.logger.logger.info("ScanAuctionHouses() TP=%f " % ComputeTemporalPhase())
-            nap_time = (ComputeTemporalPhase() + 10 - (now.second + now.microsecond/1e6)) % 60
+            tp = ComputeTemporalPhase()
+            ns = (now.second + now.microsecond/1e6)
+            wf.logger.logger.info("ScanAuctionHouses() TP=%f NS=%f" % (tp, ns))
+            nap_time = (tp + 10 - ns) % 30
             wf.logger.logger.info("ScanAuctionHouses() No updates occurred.  Enforced nap of %f seconds" % nap_time)
             time.sleep(nap_time)
-        utc_now = datetime.datetime.utcnow()
-        # Let us poll starting at 2 minutes till the hour
-        oldest_realm_date = oldest_realm_date + datetime.timedelta(minutes=59)
-        nap_delta = (oldest_realm_date - utc_now).total_seconds()
-        if nap_delta > 0:
-            wf.logger.logger.info("ScanAuctionHouses() Napping till %s" % oldest_realm_date)
-            time.sleep(nap_delta)
-        else:
-            wf.logger.logger.info("ScanAuctionHouses() No rest for the wicked.  %s is too close." % oldest_realm_date)
         wf.logger.logger.info("!"*80)
 
 try:
