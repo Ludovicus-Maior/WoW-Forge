@@ -45,43 +45,25 @@ def ScanAuctionHouses(zone):
     while True:
         then = time.time()
         realms = wf.rds.SelectRegionRealms(zone)
-        wf.logger.logger.info("!"*80)
+        wf.logger.logger.info("*"*80)
         wf.logger.logger.info("ScanAuctionHouses(%s) %d realms to scan" % (zone, len(realms)))
-        oldest_realm_date = None
-        someone_updated = False
         ClearTemporalPhase()
         for realm in realms:
             if not ScanAuctionHouse(zone, realm, realms[realm]):
-                realm_date = wf.bnet.iso_date(realms[realm])
-                RecordTemporalPhase(realm_date)
-                if oldest_realm_date is None or realm_date < oldest_realm_date:
-                    oldest_realm_date = realm_date
-            else:
-                someone_updated = True
+                RecordTemporalPhase(wf.bnet.iso_date(realms[realm]))
         now = time.time()
         wf.logger.logger.info("ScanAuctionHouses() Scan complete in %g seconds." % (now - then))
-        if not someone_updated:
-            now = datetime.datetime.utcnow()
-            tp = ComputeTemporalPhase()
-            ns = (now.second + now.microsecond/1e6)
-            wf.logger.logger.info("ScanAuctionHouses() TP=%f NS=%f" % (tp, ns))
-            nap_time = (tp + 10 - ns) % 30
-            wf.logger.logger.info("ScanAuctionHouses() No updates occurred.  Enforced nap of %f seconds" % nap_time)
-            time.sleep(nap_time)
+        now = datetime.datetime.utcnow()
+        tp = ComputeTemporalPhase()
+        ns = (now.second + now.microsecond/1e6)
+        wf.logger.logger.debug("ScanAuctionHouses() TP=%f NS=%f" % (tp, ns))
+        nap_time = (tp + 4 - ns) % 60
+        wf.logger.logger.info("ScanAuctionHouses() Enforced nap of %f seconds" % nap_time)
+        time.sleep(nap_time)
         wf.logger.logger.info("!"*80)
 
 try:
-    zone = None
-    realms = None
-    if len(sys.argv) > 2:
-        zone = sys.argv[1]
-        realms = {}
-        for realm in sys.argv[2:]:
-            realms[realm] = 0
-        ScanAuctionHouses(zone=zone, realms=realms)
-    else:
-        zone = 'US'
-        ScanAuctionHouses(zone)
+    ScanAuctionHouses("US")
 except:
     wf.logger.logger.exception("Exception while calling ScanAuctionHouses(%s,%s)" % (zone, realms))
     exit(1)
