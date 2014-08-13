@@ -65,7 +65,7 @@ def ScanAuctionHouses(zone):
 try:
     ScanAuctionHouses("US")
 except:
-    wf.logger.logger.exception("Exception while calling ScanAuctionHouses(%s,%s)" % (zone, realms))
+    wf.logger.logger.exception("Exception while calling ScanAuctionHouses()")
     exit(1)
        
 
