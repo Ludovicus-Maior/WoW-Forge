@@ -24,5 +24,7 @@ def save_ah_file(local_file, zone, realm, timestamp, retry=3):
         else:
             raise
     finally:
-        os.unlink(local_file)
+        # Clean up.  The file may be gone if we retried.
+        if os.path.isfile(local_file):
+            os.unlink(local_file)
 
