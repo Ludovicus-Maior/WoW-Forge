@@ -25,11 +25,15 @@ def ScanAuctionHouse(zone, realm, lastScanned):
     realm_date = wf.bnet.iso_date(lastScanned)
     utc_now = datetime.datetime.utcnow()
     how_stale = (utc_now-realm_date).total_seconds()
-    if how_stale < (58*60):
+    if how_stale < (60*60):
         # wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
         return None
-    if how_stale > (2*60*60):
+    if how_stale > (4*60*60):
+        wf.logger.logger.error("ScanAuctionHouse(%s,%s): Realm is RANCID (%s)" % (zone, realm, lastScanned))
+    elif how_stale > (2*60*60):
         wf.logger.logger.warning("ScanAuctionHouse(%s,%s): Realm is STALE (%s)" % (zone, realm, lastScanned))
+    elif how_stale > (1.5*60*60):
+        wf.logger.logger.info("ScanAuctionHouse(%s,%s): Realm is LATE (%s)" % (zone, realm, lastScanned))
     then = time.time()
     result = wf.bnet.get_auctions(zone, realm, lastScanned)
     if result:
