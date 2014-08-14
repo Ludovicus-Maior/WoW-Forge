@@ -131,5 +131,7 @@ def get_auctions(zone, realm, lastScanned):
         wf.logger.logger.exception("get_auctions()")
         wf.rds.FinishedRealm(zone, realm, lastScanned)
         return None
+    if path is None:
+        return None
     wf.rds.FinishedRealm(zone, realm, datetime.datetime.utcfromtimestamp(lm/1000).isoformat(" "))
     return (path, (lm/1000))
