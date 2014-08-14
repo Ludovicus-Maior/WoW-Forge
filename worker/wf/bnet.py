@@ -54,7 +54,11 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
         headers["If-Modified-Since"] = modified_since
     if allow_compression:
         headers["Accept-encoding"] = 'gzip'
-    response = http.request('GET', url, headers=headers, preload_content=False)
+    try:
+        response = http.request('GET', url, headers=headers, preload_content=False)
+    except urllib3.exceptions.MaxRetryError:
+        wf.logger.logger.exception("Error connecting to %s.  Abandoning." % url)
+        return None
     if modified_since and response.status == 304:
         # wf.logger.logger.info("Status 304, no new data since %s" % modified_since)
         return None
