@@ -103,7 +103,12 @@ def request(url, return_file=False, allow_compression=False, modified_since=None
         return data
     if response.status == 500:
         data = response.read()
+        c_type = response.headers.get('content-type', '')
+        if "json" in c_type.lower():
+            data = json.loads(data)
         wf.util.IsLimitExceeded(data)
+        wf.logger.logger.error(data)
+        return None
     if response.status == 404 and retry404 and retry404 > 0:
         wf.logger.logger.info("URL %s not found, retry up to %d times" % (url, retry404))
         time.sleep(1.0)
