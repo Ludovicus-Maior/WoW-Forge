@@ -28,9 +28,9 @@ def ScanAuctionHouse(zone, realm, lastScanned):
     if how_stale < (60*60):
         # wf.logger.logger.info("ScanAuctionHouse(%s,%s): Too soon to check (%s)" % (zone, realm, lastScanned))
         return None
-    if how_stale > (4*60*60):
+    if how_stale > (5*60*60):
         wf.logger.logger.error("ScanAuctionHouse(%s,%s): Realm is RANCID (%s)" % (zone, realm, lastScanned))
-    elif how_stale > (2*60*60):
+    elif how_stale > (3*60*60):
         wf.logger.logger.warning("ScanAuctionHouse(%s,%s): Realm is STALE (%s)" % (zone, realm, lastScanned))
     elif how_stale > (1.5*60*60):
         wf.logger.logger.info("ScanAuctionHouse(%s,%s): Realm is LATE (%s)" % (zone, realm, lastScanned))
