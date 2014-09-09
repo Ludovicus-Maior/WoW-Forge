@@ -16,10 +16,10 @@ def save_ah_file(local_file, zone, realm, timestamp, retry=3):
         key.key = "%s/%s/%s.json" % (zone, realm, timestamp)
         wf.logger.logger.info("copying %s to %s" % (local_file, key.key))
         key.set_contents_from_filename(local_file)
-    except StandardError:
+    except Exception:
         if retry > 0:
             wf.logger.logger.exception("Error while writing file, retry up to %d times" % retry)
-            time.sleep(1.0)
+            time.sleep(2.0)
             return save_ah_file(local_file, zone, realm, timestamp, retry=(retry-1))
         else:
             raise
